@@ -1,0 +1,34 @@
+export const queryKeys = {
+  auth: {
+    me: ['auth', 'me'] as const,
+    permissions: ['auth', 'permissions'] as const,
+  },
+  review: {
+    dashboard: ['review', 'dashboard'] as const,
+    tasks: ['review', 'tasks'] as const,
+    caseDetail: (id: string) => ['review', 'case', id] as const,
+    pageModel: (id: string) => ['review', 'page-model', id] as const,
+    comments: (id: string) => ['review', 'comments', id] as const,
+    ocrSummary: (id: string) => ['review', 'ocr-summary', id] as const,
+    routePlan: (id: string) => ['review', 'route-plan', id] as const,
+    ruleHits: (id: string) => ['review', 'rule-hits', id] as const,
+    decisions: (id: string) => ['review', 'decisions', id] as const,
+    auditTrail: (id: string) => ['review', 'audit-trail', id] as const,
+  },
+  admin: {
+    dashboardModel: ['admin', 'dashboard-model'] as const,
+    rules: ['admin', 'rules'] as const,
+    ruleDetail: (id: string) => ['admin', 'rule', id] as const,
+    mapLayers: ['admin', 'map-layers'] as const,
+    mapImportJobs: ['admin', 'map-import-jobs'] as const,
+    mapImportJob: (id: string) => ['admin', 'map-import-job', id] as const,
+  },
+  ops: {
+    ocrJobs: ['ops', 'ocr-jobs'] as const,
+    ocrJob: (id: string) => ['ops', 'ocr-job', id] as const,
+    notificationJobs: ['ops', 'notification-jobs'] as const,
+    importJobs: ['ops', 'import-jobs'] as const,
+    importJob: (id: string) => ['ops', 'import-job', id] as const,
+    auditLogs: ['ops', 'audit-logs'] as const,
+  },
+} as const

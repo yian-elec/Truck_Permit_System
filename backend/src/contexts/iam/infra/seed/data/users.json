@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "account_type": "system",
+      "status": "active",
+      "username": null,
+      "password_hash": "$2b$12$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "display_name": "系統帳號",
+      "email": null,
+      "mobile": null,
+      "external_provider": null,
+      "external_subject": null,
+      "mfa_enabled": false,
+      "last_login_at": null,
+      "deleted_at": null
+    }
+  ]
+}

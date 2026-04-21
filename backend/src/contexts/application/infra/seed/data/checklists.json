@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "checklist_id": "55555555-5555-4555-8555-555555555505",
+      "application_id": "11111111-1111-4111-8111-111111111101",
+      "item_code": "vehicle_license_copy",
+      "item_name": "行車執照影本（拖車使用證）",
+      "is_required": true,
+      "is_satisfied": true,
+      "source": "template",
+      "note": null
+    }
+  ]
+}

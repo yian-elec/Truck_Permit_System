@@ -1,0 +1,15 @@
+{
+  "data": [
+    {
+      "layer_id": "11111111-1111-1111-1111-111111111101",
+      "layer_code": "demo_ntpc_truck_v1",
+      "layer_name": "示範圖資版本（未發布）",
+      "layer_type": "restriction_source",
+      "source_type": "kml",
+      "source_ref": "seed/demo",
+      "version_no": "2026.04.07.1",
+      "is_active": false,
+      "published_at": null
+    }
+  ]
+}

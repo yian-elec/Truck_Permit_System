@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "permission_code": "iam.assign_roles",
+      "description": "指派使用者角色"
+    },
+    {
+      "permission_code": "iam.view_self",
+      "description": "讀取自身 IAM 基本資料"
+    }
+  ]
+}

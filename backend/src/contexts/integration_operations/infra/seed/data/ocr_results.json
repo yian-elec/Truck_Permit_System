@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "ocr_result_id": "cccccccc-cccc-cccc-cccc-cccccccc0001",
+      "attachment_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb001",
+      "field_name": "plate",
+      "field_value": "TEST-0001",
+      "confidence": 0.9876,
+      "raw_json": { "engine": "seed" }
+    }
+  ]
+}

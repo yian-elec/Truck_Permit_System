@@ -1,0 +1,9 @@
+# 測試依賴
+# pypdf：與主程式相同，用於許可證 PDF 字型驗證之 unit test（主依賴見 requirements.txt）
+pypdf>=4.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+factory-boy>=3.3.0
+faker>=19.0.0

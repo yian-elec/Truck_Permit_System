@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "file_id": "33333333-3333-4333-8333-333333333303",
+      "bucket_name": "permit-dev",
+      "object_key": "seed/demo.pdf",
+      "storage_provider": "s3",
+      "mime_type": "application/pdf",
+      "size_bytes": 1024,
+      "checksum_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "virus_scan_status": "clean"
+    }
+  ]
+}

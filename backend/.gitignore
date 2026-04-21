@@ -1,0 +1,255 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# 專案特定
+# 本機許可證 PDF（UC-PERMIT-02）
+.local_permit_files/
+
+# 環境變數文件
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# 專案配置文件
+set_env.ps1
+setup.py
+
+# 資料庫文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 日誌文件
+*.log
+logs/
+
+# 臨時文件
+*.tmp
+*.temp
+temp/
+tmp/
+
+# 測試覆蓋率報告
+.coverage
+htmlcov/
+
+# 快取目錄
+.cache/
+.pytest_cache/
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# 備份文件
+*.bak
+*.backup
+*~
+
+# 壓縮文件
+*.zip
+*.tar.gz
+*.rar
+
+# 配置文件 (如果包含敏感信息)
+config.ini
+settings.ini
+
+# 開發工具生成的文件
+*.swp
+*.swo
+*~
+
+# 本地開發文件
+local/
+dev/
+development/
+
+# 依賴目錄
+node_modules/
+vendor/
+
+# 構建產物
+build/
+dist/
+*.egg-info/
+
+# 文檔生成
+docs/_build/
+site/
+
+# 性能分析
+*.prof
+*.profile
+
+# 調試文件
+debug.log
+error.log
+access.log
+
+# 測試數據
+test_data/
+test_files/
+*.test.json
+*.test.csv
+
+# 本地數據庫
+local.db
+test.db
+development.db
+
+# 密鑰文件
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# 敏感配置文件
+secrets.json
+credentials.json
+api_keys.json
+
+# 本地開發腳本
+dev_*.py
+local_*.py
+test_*.py
+debug_*.py

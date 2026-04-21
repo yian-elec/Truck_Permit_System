@@ -1,0 +1,22 @@
+@import 'tailwindcss';
+@import './reset.css';
+@import './theme.css';
+
+@layer base {
+  #root {
+    min-height: 100vh;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      sans-serif,
+      'Apple Color Emoji',
+      'Segoe UI Emoji';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

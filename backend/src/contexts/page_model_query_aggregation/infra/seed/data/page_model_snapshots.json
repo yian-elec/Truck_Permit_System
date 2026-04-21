@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "snapshot_id": "a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1",
+      "page_kind": "applicant_application_home",
+      "application_id": null,
+      "cache_key": "seed:demo:applicant_application_home:v1",
+      "payload_json": {
+        "kind": "applicant_application_home",
+        "contract_version": { "major": 1 },
+        "sections": []
+      },
+      "contract_version_major": 1,
+      "notes": "Seed row for local/dev; safe to delete."
+    }
+  ]
+}

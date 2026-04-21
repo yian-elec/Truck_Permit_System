@@ -1,0 +1,15 @@
+{
+  "data": [
+    {
+      "audit_log_id": "eeeeeeee-eeee-eeee-eeee-eeeeeeee0001",
+      "actor_user_id": null,
+      "actor_type": "system",
+      "action_code": "ops.seed.bootstrap",
+      "resource_type": "ops",
+      "resource_id": "seed",
+      "before_json": null,
+      "after_json": { "seed": true },
+      "client_ip": "192.0.2.1"
+    }
+  ]
+}

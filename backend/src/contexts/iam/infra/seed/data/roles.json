@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "role_code": "admin",
+      "role_name": "系統管理者",
+      "description": "全域管理與 IAM 設定"
+    },
+    {
+      "role_code": "officer",
+      "role_name": "承辦人員",
+      "description": "案件審查與作業"
+    }
+  ]
+}

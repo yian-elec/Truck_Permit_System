@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "notification_job_id": "dddddddd-dddd-dddd-dddd-dddddddd0001",
+      "channel": "email",
+      "recipient": "ops-seed@truckpermitsystem.local",
+      "template_code": "submitted",
+      "payload_json": { "permitId": "seed-permit-1", "event": "submitted" },
+      "status": "pending"
+    }
+  ]
+}

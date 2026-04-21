@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "decision_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa04",
+      "application_id": "11111111-1111-4111-8111-111111111101",
+      "decision_type": "supplement",
+      "selected_candidate_id": null,
+      "override_id": null,
+      "approved_start_at": null,
+      "approved_end_at": null,
+      "reason": "（範例）文件不全，請依補件單補正。",
+      "decided_by": "22222222-2222-4222-8222-222222222202",
+      "decided_at": "2026-04-01T10:00:00+00:00"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "data": [
+    { "role_code": "admin", "permission_code": "iam.assign_roles" },
+    { "role_code": "admin", "permission_code": "iam.view_self" },
+    { "role_code": "officer", "permission_code": "iam.view_self" }
+  ]
+}
