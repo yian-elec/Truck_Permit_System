@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import type * as React from 'react'
-import { useMemo } from 'react'
-import { FormProvider, useForm, type Resolver } from 'react-hook-form'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo } from 'react'
+import { FormProvider, useForm, useWatch, type Resolver } from 'react-hook-form'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { getErrorMessage } from '@/shared/api/api-error'
@@ -11,6 +11,7 @@ import {
   REASON_TYPE_OPTIONS,
   normalizeDeliveryMethodCode,
 } from '@/shared/constants/application-options'
+import { routePaths } from '@/shared/constants/route-paths'
 import { usePageTitle, useConfirmLeave } from '@/shared/hooks'
 import {
   PageContainer,
@@ -23,27 +24,28 @@ import {
   Select,
 } from '@/shared/ui'
 
-import { useApplicationPermit } from '@/features/permit/hooks/useApplicationPermit'
-import { useApplicationEditorPageModel } from '@/features/page-model/hooks/useApplicationEditorPageModel'
 import { RouteRequestForm } from '@/features/routing/components/RouteRequestForm'
 import { MissingItemsList } from '@/features/submission/components/MissingItemsList'
-import { SubmissionCheckPanel } from '@/features/submission/components/SubmissionCheckPanel'
-import { SubmitSection } from '@/features/submission/components/SubmitSection'
 import { useSubmissionCheck } from '@/features/submission/hooks/useSubmissionCheck'
-import { useSupplementRequests } from '@/features/supplement/hooks/useSupplementRequests'
 import { ApplicationAttachmentsPanel } from '../components/ApplicationAttachmentsPanel'
-import { ConsentClauseSection } from '../components/ConsentClauseSection'
 import { useAttachments } from '@/features/attachment/hooks/useAttachments'
 import { VehicleList } from '@/features/vehicle/components/VehicleList'
 
 import { ApplicantProfileForm } from '../components/ApplicantProfileForm'
+import { ApplicationConsentSummarySection } from '../components/ApplicationConsentSummarySection'
+import { ApplicationFlowStepper } from '../components/ApplicationFlowStepper'
 import { ApplicationSummaryCard } from '../components/ApplicationSummaryCard'
 import { CompanyProfileForm } from '../components/CompanyProfileForm'
+import { isApplicantApplicationEditableStatus } from '../lib/application-edit-access'
 import { buildPatchApplicationBody } from '../lib/build-patch-application-body'
+import {
+  filterDisplayMissingReasonCodes,
+  isLocalProfileCompleteForSubmit,
+} from '../lib/local-profile-readiness'
+import { requiresCompanyProfileSection } from '../lib/applicant-type-ui'
 import { applicantProfileFromDto, companyProfileFromDto } from '../lib/profile-form-mappers'
 import { useApplicationDetail } from '../hooks/useApplicationDetail'
 import { usePatchApplication } from '../hooks/usePatchApplication'
-import { useAcceptConsent } from '../hooks/useAcceptConsent'
 import { applicationCoreSchema, type ApplicationCoreValues } from '../validators/application-form.schema'
 import {
   applicantProfileFormSchema,
@@ -59,12 +61,9 @@ export function ApplicationEditorPage() {
   usePageTitle(`編輯案件 ${applicationId}`)
 
   const detail = useApplicationDetail(applicationId)
-  const supplementRequests = useSupplementRequests(applicationId)
-  const permit = useApplicationPermit(applicationId)
   const submissionCheck = useSubmissionCheck(applicationId)
   const attachments = useAttachments(applicationId)
   const patch = usePatchApplication(applicationId)
-  const consent = useAcceptConsent(applicationId)
 
   const reasonTypeSelectOptions = useMemo(() => {
     const current = detail.data?.reason_type?.trim()
@@ -82,34 +81,7 @@ export function ApplicationEditorPage() {
     return DELIVERY_METHOD_OPTIONS
   }, [detail.data?.delivery_method])
 
-  const editorPageModelParams = useMemo(() => {
-    const d = detail.data
-    if (!d) return {}
-    const items = (supplementRequests.data as { items?: unknown[] } | undefined)?.items
-    const hasPendingSupplement =
-      d.status === 'supplement_required' || (Array.isArray(items) && items.length > 0)
-    // 自動規劃僅由審查／管理端觸發；申請端不反映已產生之路線方案。
-    const hasActiveRoutePlan = false
-    const hasIssuedPermitDocuments = Boolean(permit.isSuccess && permit.data)
-
-    return {
-      lifecycle_phase: d.status,
-      has_active_route_plan: hasActiveRoutePlan,
-      has_pending_supplement_request: hasPendingSupplement,
-      has_issued_permit_documents: hasIssuedPermitDocuments,
-    }
-  }, [
-    detail.data,
-    supplementRequests.data,
-    permit.isSuccess,
-    permit.data,
-  ])
-
-  const pageModel = useApplicationEditorPageModel(
-    applicationId,
-    editorPageModelParams,
-    Boolean(detail.data),
-  )
+  const showCompany = requiresCompanyProfileSection(detail.data?.applicant_type)
 
   const coreForm = useForm<ApplicationCoreValues>({
     resolver: zodResolver(applicationCoreSchema),
@@ -148,12 +120,43 @@ export function ApplicationEditorPage() {
     companyForm.formState.isDirty
   useConfirmLeave(dirty)
 
+  const watchedCore = useWatch({ control: coreForm.control })
+  const watchedApplicant = useWatch({ control: applicantForm.control })
+  const watchedCompany = useWatch({ control: companyForm.control })
+
+  useEffect(() => {
+    if (!detail.data) return
+    if (!dirty) return
+    const t = window.setTimeout(() => {
+      void (async () => {
+        const coreOk = await coreForm.trigger()
+        const apOk = await applicantForm.trigger()
+        const coOk = showCompany ? await companyForm.trigger() : true
+        if (!coreOk || !apOk || !coOk) return
+        const body = buildPatchApplicationBody(
+          coreForm.getValues(),
+          applicantForm.getValues(),
+          companyForm.getValues(),
+        )
+        if (!body.patch && !body.profiles) return
+        patch.mutate(body, {
+          onSuccess: () => {
+            coreForm.reset(coreForm.getValues())
+            applicantForm.reset(applicantForm.getValues())
+            companyForm.reset(companyForm.getValues())
+          },
+          onError: (e) => toast.error(getErrorMessage(e)),
+        })
+      })()
+    }, 2000)
+    return () => window.clearTimeout(t)
+    // 依欄位變更與 dirty 觸發延遲儲存；watch* 讓逐字輸入會重置 timer
+  }, [dirty, watchedCore, watchedApplicant, watchedCompany, detail.data, showCompany, applicationId])
+
   const handleSaveAll = async () => {
-    const [coreOk, applicantOk, companyOk] = await Promise.all([
-      coreForm.trigger(),
-      applicantForm.trigger(),
-      companyForm.trigger(),
-    ])
+    const coreOk = await coreForm.trigger()
+    const applicantOk = await applicantForm.trigger()
+    const companyOk = showCompany ? await companyForm.trigger() : true
     if (!coreOk || !applicantOk || !companyOk) {
       toast.error('請修正表單錯誤後再儲存')
       return
@@ -169,7 +172,7 @@ export function ApplicationEditorPage() {
     }
     patch.mutate(body, {
       onSuccess: () => {
-        toast.success('已儲存')
+        toast.success('已儲存草稿')
         coreForm.reset(coreForm.getValues())
         applicantForm.reset(applicantForm.getValues())
         companyForm.reset(companyForm.getValues())
@@ -190,82 +193,77 @@ export function ApplicationEditorPage() {
     return <PageContainer>找不到案件</PageContainer>
   }
 
+  if (!isApplicantApplicationEditableStatus(detail.data.status)) {
+    return <Navigate to={routePaths.applicantApplication(applicationId)} replace />
+  }
+
   const check = submissionCheck.data
+  const localProfileComplete = isLocalProfileCompleteForSubmit(
+    detail.data.applicant_type,
+    (watchedApplicant as ApplicantProfileFormValues) ?? applicantForm.getValues(),
+    (watchedCompany as CompanyProfileFormValues) ?? companyForm.getValues(),
+  )
+  const displayMissingCodes = filterDisplayMissingReasonCodes(
+    check?.missing_reason_codes,
+    localProfileComplete,
+  )
+  const displayMissingCount = displayMissingCodes.length
+  const isDraft = detail.data.status === 'draft'
+  const isSupplementMode = detail.data.status === 'supplement_required'
+  const previewHref = routePaths.applicantApplicationEditPreview(applicationId)
+  const showPreviewCta = isDraft
+  const showSave = true
 
   return (
-    <PageContainer as="main" className="space-y-6 py-8">
+    <PageContainer as="main" className="space-y-6 pb-28 pt-8">
+      <ApplicationFlowStepper phase="edit" />
+
       <ApplicationSummaryCard detail={detail.data} />
 
-      {pageModel.data?.sections?.length ? (
-        <SectionCard title="編輯區塊（頁面模型）">
-          <ul className="list-inside list-disc text-sm text-muted-foreground">
-            {pageModel.data.sections
-              .slice()
-              .sort((a, b) => a.sort_order - b.sort_order)
-              .map((s) => (
-                <li key={s.section_code}>{s.section_code}</li>
-              ))}
-          </ul>
-        </SectionCard>
-      ) : null}
-
-      <SectionCard
-        title="案件資料"
-        description="案件欄位與申請人／公司資料一併儲存。"
-      >
-        <FormProvider {...coreForm}>
-          <Form className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField<ApplicationCoreValues>
-                name="reason_type"
-                label="申請事由類型"
-                children={(field) => (
-                  <Select
-                    id={field.name}
-                    name={field.name}
-                    ref={field.ref as React.Ref<HTMLSelectElement>}
-                    value={String(field.value ?? '')}
-                    onBlur={field.onBlur}
-                    onChange={field.onChange}
-                    options={reasonTypeSelectOptions}
-                    placeholder="請選擇申請事由"
-                  />
-                )}
-              />
-              <FormField<ApplicationCoreValues>
-                name="delivery_method"
-                label="送達方式"
-                children={(field) => (
-                  <Select
-                    id={field.name}
-                    name={field.name}
-                    ref={field.ref as React.Ref<HTMLSelectElement>}
-                    value={String(field.value ?? '')}
-                    onBlur={field.onBlur}
-                    onChange={field.onChange}
-                    options={deliveryMethodSelectOptions}
-                    placeholder="請選擇送達方式"
-                  />
-                )}
-              />
-            </div>
-            <FormField<ApplicationCoreValues>
-              name="reason_detail"
-              label="事由說明（選填）"
-              children={(field) => (
-                <Input
-                  name={field.name}
-                  ref={field.ref as React.Ref<HTMLInputElement>}
-                  value={String(field.value ?? '')}
-                  onBlur={field.onBlur}
-                  onChange={field.onChange}
+      <div id="section-application-core" className="scroll-mt-24">
+        <SectionCard
+          title="案件資料"
+          description="基本欄位與申請人資料一併儲存；公司資料僅限法人／團體申請時填寫。"
+        >
+          <FormProvider {...coreForm}>
+            <Form className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField<ApplicationCoreValues>
+                  name="reason_type"
+                  label="申請事由類型"
+                  children={(field) => (
+                    <Select
+                      id={field.name}
+                      name={field.name}
+                      ref={field.ref as React.Ref<HTMLSelectElement>}
+                      value={String(field.value ?? '')}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                      options={reasonTypeSelectOptions}
+                      placeholder="請選擇申請事由"
+                    />
+                  )}
                 />
-              )}
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
+                <FormField<ApplicationCoreValues>
+                  name="delivery_method"
+                  label="送達方式"
+                  children={(field) => (
+                    <Select
+                      id={field.name}
+                      name={field.name}
+                      ref={field.ref as React.Ref<HTMLSelectElement>}
+                      value={String(field.value ?? '')}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                      options={deliveryMethodSelectOptions}
+                      placeholder="請選擇送達方式"
+                    />
+                  )}
+                />
+              </div>
               <FormField<ApplicationCoreValues>
-                name="requested_start_at"
-                label="許可起始（ISO 日期時間）"
+                name="reason_detail"
+                label="事由說明（選填）"
                 children={(field) => (
                   <Input
                     name={field.name}
@@ -276,48 +274,93 @@ export function ApplicationEditorPage() {
                   />
                 )}
               />
-              <FormField<ApplicationCoreValues>
-                name="requested_end_at"
-                label="許可結束（ISO 日期時間）"
-                children={(field) => (
-                  <Input
-                    name={field.name}
-                    ref={field.ref as React.Ref<HTMLInputElement>}
-                    value={String(field.value ?? '')}
-                    onBlur={field.onBlur}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-            </div>
-          </Form>
-        </FormProvider>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField<ApplicationCoreValues>
+                  name="requested_start_at"
+                  label="許可起始（ISO 日期時間）"
+                  children={(field) => (
+                    <Input
+                      name={field.name}
+                      ref={field.ref as React.Ref<HTMLInputElement>}
+                      value={String(field.value ?? '')}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+                <FormField<ApplicationCoreValues>
+                  name="requested_end_at"
+                  label="許可結束（ISO 日期時間）"
+                  children={(field) => (
+                    <Input
+                      name={field.name}
+                      ref={field.ref as React.Ref<HTMLInputElement>}
+                      value={String(field.value ?? '')}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+              </div>
+            </Form>
+          </FormProvider>
 
-        <div className="mt-6 space-y-6">
-          <ApplicantProfileForm form={applicantForm} />
-          <CompanyProfileForm form={companyForm} />
-        </div>
+          <div className="mt-6 space-y-6">
+            <ApplicantProfileForm form={applicantForm} />
+            {showCompany ? <CompanyProfileForm form={companyForm} /> : null}
+          </div>
+        </SectionCard>
+      </div>
 
-        <Button type="button" className="mt-6" loading={patch.isPending} onClick={handleSaveAll}>
-          儲存案件
-        </Button>
-      </SectionCard>
+      <div id="section-vehicles" className="scroll-mt-24">
+        <VehicleList applicationId={applicationId} />
+      </div>
 
-      <ConsentClauseSection consent={consent} />
+      <div id="section-attachments" className="scroll-mt-24">
+        <ApplicationAttachmentsPanel applicationId={applicationId} attachments={attachments.data} />
+      </div>
 
-      <VehicleList applicationId={applicationId} />
+      <div id="section-route" className="scroll-mt-24">
+        <RouteRequestForm applicationId={applicationId} />
+      </div>
 
-      <ApplicationAttachmentsPanel applicationId={applicationId} attachments={attachments.data} />
+      {isDraft && applicationId ? <ApplicationConsentSummarySection applicationId={applicationId} /> : null}
 
-      <RouteRequestForm applicationId={applicationId} />
-
-      <SubmissionCheckPanel data={check} />
-      {check?.missing_reason_codes?.length ? (
-        <SectionCard title="無法送件原因">
-          <MissingItemsList items={check.missing_reason_codes} />
+      {isDraft && displayMissingCount > 0 ? (
+        <SectionCard title="送件前檢查：尚缺項目">
+          <p className="mb-2 text-sm text-muted-foreground">
+            共 {displayMissingCount} 項；補齊後請前往預覽確認。申辦同意書可於本頁或預覽頁開啟視窗、勾選並按「確認」完成。表單會約 2 秒後自動儲存草稿，亦可手按「儲存草稿」。
+          </p>
+          <MissingItemsList page="edit" items={displayMissingCodes} applicationId={applicationId} />
         </SectionCard>
       ) : null}
-      <SubmitSection applicationId={applicationId} />
+
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">
+            {isDraft && displayMissingCount > 0
+              ? `目前尚缺 ${displayMissingCount} 項`
+              : isDraft
+                ? '可前往預覽並送件'
+                : isSupplementMode
+                  ? '待補件：請儲存變更，並至「補件」完成回覆。'
+                  : null}
+            {isDraft && !check?.can_submit ? ' · 目前不可送件' : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {showSave ? (
+              <Button type="button" loading={patch.isPending} onClick={handleSaveAll}>
+                儲存草稿
+              </Button>
+            ) : null}
+            {showPreviewCta ? (
+              <Button type="button" variant="default" asChild>
+                <Link to={previewHref}>前往預覽確認</Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
     </PageContainer>
   )
 }

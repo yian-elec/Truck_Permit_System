@@ -5,11 +5,14 @@ export const routePaths = {
   register: '/register',
   mfa: '/mfa',
   applicant: '/applicant',
-  applicantApplications: '/applicant/applications',
   applicantApplicationNew: '/applicant/applications/new',
   applicantApplication: (applicationId: string) => `/applicant/applications/${applicationId}`,
   applicantApplicationEdit: (applicationId: string) =>
     `/applicant/applications/${applicationId}/edit`,
+  applicantApplicationEditPreview: (applicationId: string) =>
+    `/applicant/applications/${applicationId}/edit/preview`,
+  applicantApplicationSubmitComplete: (applicationId: string) =>
+    `/applicant/applications/${applicationId}/submit-complete`,
   applicantApplicationSupplement: (applicationId: string) =>
     `/applicant/applications/${applicationId}/supplement`,
   applicantApplicationPermit: (applicationId: string) =>

@@ -10,7 +10,6 @@ export const queryKeys = {
     handlingUnits: ['public-service', 'handling-units'] as const,
   },
   pageModel: {
-    applicationHome: ['page-model', 'application-home'] as const,
     applicationEditor: (applicationId: string) =>
       ['page-model', 'application-editor', applicationId] as const,
   },

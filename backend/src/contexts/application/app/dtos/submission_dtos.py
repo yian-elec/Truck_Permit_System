@@ -16,7 +16,7 @@ class SubmissionCheckResultDTO(BaseModel):
     can_submit: bool = Field(..., description="是否已滿足送件條件")
     missing_reason_codes: list[str] = Field(
         default_factory=list,
-        description="缺漏原因代碼（與領域 evaluate_submission_readiness 一致）",
+        description="缺漏原因代碼（領域 evaluate_submission_readiness 併可含 incomplete_route 等由 App 層補上）",
     )
 
 

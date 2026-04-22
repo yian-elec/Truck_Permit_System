@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { LogOut, Moon, Sun } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -17,6 +18,8 @@ import {
 import { useLogout } from '@/features/auth/hooks/useLogout'
 import { useMe } from '@/features/auth/hooks/useMe'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import { CaseDescriptionDialog } from '@/features/public-service/components/CaseDescriptionDialog'
+import { FormDownloadDialog } from '@/features/public-service/components/FormDownloadDialog'
 
 import { useAppStore } from '../store/app.store'
 
@@ -32,6 +35,8 @@ export function ApplicantLayout() {
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)
   const logout = useLogout()
+  const [caseOpen, setCaseOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -43,14 +48,50 @@ export function ApplicantLayout() {
             </NavLink>
             <nav className="hidden items-center gap-1 sm:flex">
               <NavLink className={navClass} to={routePaths.applicant} end>
-                首頁
-              </NavLink>
-              <NavLink className={navClass} to={routePaths.applicantApplications}>
                 我的案件
               </NavLink>
+              <NavLink className={navClass} to={routePaths.applicantApplicationNew}>
+                建立新案件
+              </NavLink>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-md"
+                onClick={() => setCaseOpen(true)}
+              >
+                案件說明
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-md"
+                onClick={() => setFormOpen(true)}
+              >
+                書表下載
+              </Button>
             </nav>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setCaseOpen(true)}
+              >
+                案件
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormOpen(true)}
+              >
+                書表
+              </Button>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -94,6 +135,8 @@ export function ApplicantLayout() {
           </div>
         </div>
       </header>
+      <CaseDescriptionDialog open={caseOpen} onOpenChange={setCaseOpen} />
+      <FormDownloadDialog open={formOpen} onOpenChange={setFormOpen} />
       <Outlet />
     </div>
   )

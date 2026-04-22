@@ -17,6 +17,7 @@ import {
 import { routePaths } from '@/shared/constants/route-paths'
 import { Button, Form, FormField, Input, PageContainer, SectionCard, Select } from '@/shared/ui'
 
+import { ApplicationFlowStepper } from '../components/ApplicationFlowStepper'
 import { useCreateApplication } from '../hooks/useCreateApplication'
 
 function localDatetimeToIso(local: string): string {
@@ -84,9 +85,10 @@ export function NewApplicationPage() {
 
   return (
     <PageContainer as="main" className="max-w-lg space-y-6 py-8">
+      <ApplicationFlowStepper phase="new" />
       <div>
-        <h1 className="text-2xl font-semibold">新增案件</h1>
-        <p className="text-sm text-muted-foreground">建立一筆新的草稿案件。</p>
+        <h1 className="text-2xl font-semibold">建立案件</h1>
+        <p className="text-sm text-muted-foreground">建立一筆新的草稿案件，建立後可於編輯頁填寫完整資料。</p>
       </div>
       <SectionCard>
         <FormProvider {...form}>
@@ -180,7 +182,7 @@ export function NewApplicationPage() {
               )}
             />
             <Button type="submit" className="mt-4 w-full" loading={create.isPending}>
-              建立草稿
+              建立案件並開始填寫
             </Button>
           </Form>
         </FormProvider>

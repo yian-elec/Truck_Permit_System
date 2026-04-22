@@ -27,7 +27,10 @@ export function ApplicantProfileForm({ form }: { form: UseFormReturn<ApplicantPr
 
   return (
     <FormProvider {...form}>
-      <SectionCard title="申請人資料" description="標示 * 為必填，其餘選填。">
+      <SectionCard
+        title="申請人資料"
+        description="標示 * 為必填。送件前檢查需要身分證字號、地址與可聯絡方式等已寫入；填完後請按頁面底部「儲存草稿」。"
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField<ApplicantProfileFormValues>
             name="name"
@@ -48,6 +51,7 @@ export function ApplicantProfileForm({ form }: { form: UseFormReturn<ApplicantPr
           <FormField<ApplicantProfileFormValues>
             name="id_no"
             label="身分證字號"
+            required
             children={(field) => (
               <Input
                 name={field.name}

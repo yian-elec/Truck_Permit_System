@@ -17,9 +17,6 @@ export function PublicLayout() {
             {appConfig.appName}
           </Link>
           <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to={routePaths.consent}>條款</Link>
-            </Button>
             {accessToken ? (
               <Button size="sm" asChild>
                 <Link to={routePaths.applicant}>我的帳戶</Link>

@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import type * as React from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { ApiError } from '@/shared/api/api-error'
 import { routePaths } from '@/shared/constants/route-paths'
+import { getSafeReturnPath, withReturnQuery } from '@/features/auth/lib/safe-return-url'
 import { Button, Form, FormField, Input } from '@/shared/ui'
 
 import { useRegister } from '../hooks/useRegister'
@@ -16,6 +17,9 @@ type Props = {
 }
 
 export function RegisterForm({ onRegistered }: Props) {
+  const [searchParams] = useSearchParams()
+  const returnPath = getSafeReturnPath(searchParams.get('returnUrl'))
+  const loginTo = withReturnQuery(routePaths.login, returnPath)
   const register = useRegister()
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
@@ -116,7 +120,7 @@ export function RegisterForm({ onRegistered }: Props) {
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           已有帳號？{' '}
-          <Link className="text-primary underline-offset-4 hover:underline" to={routePaths.login}>
+          <Link className="text-primary underline-offset-4 hover:underline" to={loginTo}>
             登入
           </Link>
         </p>

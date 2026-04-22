@@ -5,7 +5,7 @@
 - 維護 application_no、狀態、申請區間、送達方式、申請人與公司資料、車輛、附件檢核之一致性
 - 實作核心規則：草稿可編輯、已送件不可直接覆寫核心、補件狀態可走補件編輯、必備附件與至少一車、期間不超過政策上限、狀態歷程僅附加
 
-外部依賴（政策天數上限等）由方法參數注入，不引用 Infra。路線需求由申請人於草稿儲存、自動規劃由審查端執行，送件閘道不檢查 routing.route_requests。
+外部依賴（政策天數上限等）由方法參數注入，不引用 Infra。路線是否備妥由 Application 層以 `extra_missing_codes`（如 `incomplete_route`）併入送件檢查。
 """
 
 from __future__ import annotations
@@ -359,6 +359,7 @@ class Application:
         self,
         *,
         max_permit_calendar_days: int,
+        extra_missing_codes: tuple[str, ...] = (),
     ) -> SubmissionReadiness:
         """
         彙整是否可送件與缺漏代碼。
@@ -378,6 +379,7 @@ class Application:
             self.requested_period.assert_within_max_calendar_days(max_permit_calendar_days)
         except InvalidDomainValueError:
             missing.append("permit_period_exceeds_policy")
+        missing.extend(extra_missing_codes)
         can = len(missing) == 0
         return SubmissionReadiness(can_submit=can, missing_reason_codes=tuple(missing))
 
@@ -405,6 +407,7 @@ class Application:
         self,
         *,
         max_permit_calendar_days: int,
+        extra_missing_codes: tuple[str, ...] = (),
     ) -> None:
         """
         送件前強制檢查；不通過則拋出領域例外。
@@ -413,6 +416,7 @@ class Application:
         """
         r = self.evaluate_submission_readiness(
             max_permit_calendar_days=max_permit_calendar_days,
+            extra_missing_codes=extra_missing_codes,
         )
         if r.can_submit:
             return
@@ -437,6 +441,7 @@ class Application:
         now: datetime,
         changed_by: UUID | None,
         max_permit_calendar_days: int,
+        extra_missing_codes: tuple[str, ...] = (),
         history_id: UUID | None = None,
     ) -> None:
         """
@@ -451,6 +456,7 @@ class Application:
             )
         self.assert_ready_to_submit(
             max_permit_calendar_days=max_permit_calendar_days,
+            extra_missing_codes=extra_missing_codes,
         )
         self.apply_status_transition(
             to_status=ApplicationStatus.submitted(),

@@ -8,6 +8,8 @@ import { useApplicationPermit } from '@/features/permit/hooks/useApplicationPerm
 import { SupplementRequestList } from '@/features/supplement/components/SupplementRequestList'
 import { useSupplementRequests } from '@/features/supplement/hooks/useSupplementRequests'
 
+import { isApplicantApplicationEditableStatus } from '@/features/application/lib/application-edit-access'
+
 import { ApplicationSummaryCard } from '../components/ApplicationSummaryCard'
 import { ApplicationTimeline } from '../components/ApplicationTimeline'
 import { useApplicationDetail } from '../hooks/useApplicationDetail'
@@ -32,16 +34,20 @@ export function ApplicationDetailPage() {
     return <PageContainer>找不到案件。</PageContainer>
   }
 
+  const canEdit = isApplicantApplicationEditableStatus(detail.data.status)
+
   return (
     <PageContainer as="main" className="space-y-6 py-8">
       <ApplicationSummaryCard detail={detail.data} />
       <div className="flex flex-wrap gap-2">
-        <Link
-          className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm text-primary-foreground"
-          to={routePaths.applicantApplicationEdit(applicationId)}
-        >
-          編輯
-        </Link>
+        {canEdit ? (
+          <Link
+            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm text-primary-foreground"
+            to={routePaths.applicantApplicationEdit(applicationId)}
+          >
+            編輯
+          </Link>
+        ) : null}
         <Link
           className="inline-flex h-9 items-center justify-center rounded-md border border-border px-4 text-sm"
           to={routePaths.applicantApplicationSupplement(applicationId)}

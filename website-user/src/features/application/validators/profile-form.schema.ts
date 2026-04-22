@@ -1,9 +1,12 @@
 import { z } from 'zod'
 
-/** 自然人申請人表單（對齊 ApplicantProfileDTO；僅姓名、電子郵件、通訊地址為必填） */
+/**
+ * 自然人申請人表單（與送件前領域 `ApplicantProfile.minimum_complete_for_natural_person` 對齊：
+ * 姓名、身分證字號、地址必填；聯絡需至少 email 或 mobile 一種。）
+ */
 export const applicantProfileFormSchema = z.object({
   name: z.string().min(1, '請填姓名'),
-  id_no: z.string(),
+  id_no: z.string().min(1, '請填身分證字號（送件前檢查需此欄位）'),
   gender: z.string(),
   email: z.string().min(1, '請填電子郵件').email('請填有效電子郵件'),
   mobile: z.string(),

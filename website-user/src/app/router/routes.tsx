@@ -3,13 +3,14 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 import { ApplicantLayout } from '@/app/layouts/ApplicantLayout'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { PublicLayout } from '@/app/layouts/PublicLayout'
-import { ApplicantHomePage } from '@/features/applicant-home/pages/ApplicantHomePage'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { MfaVerifyPage } from '@/features/auth/pages/MfaVerifyPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ApplicationDetailPage } from '@/features/application/pages/ApplicationDetailPage'
 import { ApplicationEditorPage } from '@/features/application/pages/ApplicationEditorPage'
 import { ApplicationListPage } from '@/features/application/pages/ApplicationListPage'
+import { ApplicationPreviewPage } from '@/features/application/pages/ApplicationPreviewPage'
+import { ApplicationSubmitCompletePage } from '@/features/application/pages/ApplicationSubmitCompletePage'
 import { NewApplicationPage } from '@/features/application/pages/NewApplicationPage'
 import { ConsentPage } from '@/features/public-service/pages/ConsentPage'
 import { ServiceHomePage } from '@/features/public-service/pages/ServiceHomePage'
@@ -62,13 +63,15 @@ export const appRoutes: RouteObject[] = [
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <ApplicantHomePage /> },
-      { path: 'applications', element: <ApplicationListPage /> },
+      { index: true, element: <ApplicationListPage /> },
       { path: 'applications/new', element: <NewApplicationPage /> },
+      { path: 'applications/:applicationId/edit/preview', element: <ApplicationPreviewPage /> },
+      { path: 'applications/:applicationId/submit-complete', element: <ApplicationSubmitCompletePage /> },
       { path: 'applications/:applicationId', element: <ApplicationDetailPage /> },
       { path: 'applications/:applicationId/edit', element: <ApplicationEditorPage /> },
       { path: 'applications/:applicationId/supplement', element: <SupplementPage /> },
       { path: 'applications/:applicationId/permit', element: <PermitPage /> },
+      { path: 'applications', element: <Navigate to={routePaths.applicant} replace /> },
     ],
   },
   {

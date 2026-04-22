@@ -1,16 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import type * as React from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/shared/api/api-error'
 import { routePaths } from '@/shared/constants/route-paths'
+import { getSafeReturnPath, withReturnQuery } from '@/features/auth/lib/safe-return-url'
 import { Button, Form, FormField, Input } from '@/shared/ui'
 
 import { useLogin } from '../hooks/useLogin'
 import { type LoginFormValues, loginFormSchema } from '../validators/login-form.schema'
 
 export function LoginForm() {
+  const [searchParams] = useSearchParams()
+  const returnPath = getSafeReturnPath(searchParams.get('returnUrl'))
+  const registerTo = withReturnQuery(routePaths.register, returnPath)
   const login = useLogin()
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -78,7 +82,7 @@ export function LoginForm() {
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           還沒有帳號？{' '}
-          <Link className="text-primary underline-offset-4 hover:underline" to={routePaths.register}>
+          <Link className="text-primary underline-offset-4 hover:underline" to={registerTo}>
             前往註冊
           </Link>
         </p>

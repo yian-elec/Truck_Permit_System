@@ -17,6 +17,9 @@ export function useAcceptConsent(applicationId: string | undefined) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.applicant.applicationEditModel(applicationId),
       })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applicant.submissionCheck(applicationId),
+      })
     },
   })
 }

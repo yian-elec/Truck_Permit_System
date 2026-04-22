@@ -22,6 +22,9 @@ export function usePatchApplication(applicationId: string | undefined) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.pageModel.applicationEditor(applicationId),
       })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.applicant.submissionCheck(applicationId),
+      })
     },
   })
 }

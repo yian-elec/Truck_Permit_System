@@ -1,7 +1,7 @@
 """
 送件前檢查與送件（UC-APP-05、UC-APP-06）。
 
-責任：評估 readiness、狀態轉 submitted 與事件發布。路線需求／自動規劃由審查端處理，送件不查 routing.route_requests。
+責任：評估 readiness、狀態轉 submitted 與事件發布。送件前由 infra 查是否已有起迄與出發時間之路線申請，否則併入 `incomplete_route`。
 """
 
 from __future__ import annotations
@@ -13,6 +13,21 @@ from shared.core.logger.logger import logger
 
 from ..dtos import SubmissionCheckResultDTO, SubmitApplicationOutputDTO
 from .application_service_context import ApplicationServiceContext, raise_domain_as_app
+
+
+def _has_minimum_route_request(application_id: UUID) -> bool:
+    from src.contexts.routing_restriction.infra.repositories.route_request_repository import (
+        RouteRequestRepository,
+    )
+
+    req = RouteRequestRepository().find_latest_by_application_id(application_id)
+    if req is None:
+        return False
+    if not (req.origin_text or "").strip() or not (req.destination_text or "").strip():
+        return False
+    if req.requested_departure_at is None:
+        return False
+    return True
 
 
 class SubmissionApplicationService:
@@ -48,11 +63,15 @@ class SubmissionApplicationService:
         self._c.ensure_applicant(app, applicant_user_id)
         now = datetime.now(timezone.utc)
         actor = changed_by if changed_by is not None else applicant_user_id
+        extra: list[str] = []
+        if not _has_minimum_route_request(application_id):
+            extra.append("incomplete_route")
         raise_domain_as_app(
             lambda: app.submit(
                 now=now,
                 changed_by=actor,
                 max_permit_calendar_days=self._c.max_permit_calendar_days,
+                extra_missing_codes=tuple(extra),
                 history_id=uuid4(),
             )
         )

@@ -47,7 +47,6 @@ export const endpoints = {
       `/api/v1/applicant/applications/${applicationId}/route-preview`,
   },
   pages: {
-    applicationHomeModel: '/api/v1/applicant/pages/application-home-model',
     applicationEditorModel: (applicationId: string) =>
       `/api/v1/applicant/pages/applications/${applicationId}/editor-model`,
   },

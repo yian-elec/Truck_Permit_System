@@ -1,5 +1,6 @@
 import { SectionCard } from '@/shared/ui'
 
+import { missingReasonToMessage } from '../lib/missing-reason-messages'
 import type { SubmissionCheckResult } from '../api/get-submission-check'
 
 export function SubmissionCheckPanel({ data }: { data: SubmissionCheckResult | null | undefined }) {
@@ -22,7 +23,7 @@ export function SubmissionCheckPanel({ data }: { data: SubmissionCheckResult | n
           <p className="text-sm font-medium text-destructive">缺少項目</p>
           <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
             {data.missing_reason_codes.map((code) => (
-              <li key={code}>{code}</li>
+              <li key={code}>{missingReasonToMessage(code)}</li>
             ))}
           </ul>
         </div>
