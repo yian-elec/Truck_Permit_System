@@ -190,7 +190,7 @@ export function ApplicantLayout() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col border-r border-border bg-sidebar transition-all duration-200',
+          'hidden lg:flex flex-col border-r border-border bg-sidebar transition-all duration-200 sticky top-0 h-screen',
           collapsed ? 'w-16' : 'w-60',
         )}
       >
