@@ -3,7 +3,6 @@ import {
   LogOut,
   Moon,
   Sun,
-  FileText,
   PlusCircle,
   Home,
   Download,
@@ -20,7 +19,6 @@ import { appConfig } from '@/shared/config/app-config'
 import { routePaths } from '@/shared/constants/route-paths'
 import { cn } from '@/shared/lib/cn'
 import {
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -54,11 +52,11 @@ export function ApplicantLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const sidebarContent = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Logo */}
       <div
         className={cn(
-          'flex items-center gap-3 border-b border-sidebar-muted px-4 py-4',
+          'flex shrink-0 items-center gap-3 border-b border-sidebar-muted px-4 py-4',
           collapsed && 'justify-center px-2',
         )}
       >
@@ -75,8 +73,8 @@ export function ApplicantLayout() {
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-1 px-2 py-4">
+      {/* Nav — scrollable if needed */}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
         {navItems.map(({ icon: Icon, label, to, end }) => (
           <NavLink
             key={to}
@@ -129,42 +127,15 @@ export function ApplicantLayout() {
         </div>
       </nav>
 
-      {/* Bottom */}
-      <div className="border-t border-sidebar-muted p-2">
-        {/* Theme toggle */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-muted-foreground transition-colors hover:bg-sidebar-muted hover:text-sidebar-foreground',
-                collapsed && 'justify-center px-2',
-              )}
-            >
-              {theme === 'dark' ? <Moon className="h-4 w-4 shrink-0" /> : <Sun className="h-4 w-4 shrink-0" />}
-              {!collapsed && <span>外觀</span>}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end">
-            <DropdownMenuLabel>顯示設定</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setTheme('light')}>
-              <Sun className="h-4 w-4" />淺色{theme === 'light' ? ' ✓' : ''}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('dark')}>
-              <Moon className="h-4 w-4" />深色{theme === 'dark' ? ' ✓' : ''}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('system')}>跟隨系統</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
+      {/* Bottom — 固定在底部，永遠可見 */}
+      <div className="shrink-0 border-t border-sidebar-muted p-2 space-y-1">
         {/* User */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               className={cn(
-                'mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-sidebar-muted',
+                'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-sidebar-muted',
                 collapsed && 'justify-center px-2',
               )}
             >
@@ -183,22 +154,32 @@ export function ApplicantLayout() {
           <DropdownMenuContent side="right" align="end">
             <DropdownMenuLabel>{user?.email ?? '已登入'}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setTheme('light')}>
+              <Sun className="h-4 w-4" />淺色{theme === 'light' ? ' ✓' : ''}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')}>
+              <Moon className="h-4 w-4" />深色{theme === 'dark' ? ' ✓' : ''}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogOut className="h-4 w-4" />登出
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Collapse toggle (desktop) */}
+        {/* Collapse toggle (desktop only) */}
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           className={cn(
-            'mt-1 hidden w-full items-center gap-3 rounded-lg px-3 py-2 text-xs text-sidebar-muted-foreground transition-colors hover:bg-sidebar-muted hover:text-sidebar-foreground lg:flex',
+            'hidden w-full items-center gap-3 rounded-lg px-3 py-2 text-xs text-sidebar-muted-foreground transition-colors hover:bg-sidebar-muted hover:text-sidebar-foreground lg:flex',
             collapsed && 'justify-center px-2',
           )}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span>收起</span></>}
+          {collapsed
+            ? <ChevronRight className="h-4 w-4" />
+            : <><ChevronLeft className="h-4 w-4" /><span>收起</span></>
+          }
         </button>
       </div>
     </div>
@@ -230,7 +211,7 @@ export function ApplicantLayout() {
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between border-b border-sidebar-muted px-4 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-sidebar-muted px-4 py-4">
           <div className="flex items-center gap-2">
             <Truck className="h-5 w-5 text-sidebar-active-foreground" />
             <span className="text-sm font-semibold text-sidebar-foreground">{appConfig.appName}</span>
