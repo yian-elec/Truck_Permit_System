@@ -12,17 +12,17 @@ export function SectionCard({ title, description, className, children }: Section
   return (
     <section
       className={cn(
-        'rounded-lg border border-border bg-background p-4 shadow-sm sm:p-6',
+        'rounded-xl border border-border bg-background shadow-sm',
         className,
       )}
     >
       {title ? (
-        <div className="mb-4 space-y-1">
-          <h2 className="text-lg font-semibold leading-none">{title}</h2>
-          {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        <div className="border-b border-border px-5 py-4 sm:px-6">
+          <h2 className="text-base font-semibold text-foreground">{title}</h2>
+          {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
         </div>
       ) : null}
-      {children}
+      <div className="p-5 sm:p-6">{children}</div>
     </section>
   )
 }
