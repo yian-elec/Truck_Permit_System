@@ -25,10 +25,10 @@ export function OpsPage() {
   const aq = useQuery({ queryKey: queryKeys.ops.auditLogs, queryFn: listAuditLogs })
 
   const ocrCols: DataTableColumn<Row>[] = [
-    { id: 'id', header: 'ocr_job_id', cell: (r) => <span className="font-mono text-xs">{String(r.ocr_job_id ?? r.id ?? '')}</span> },
-    { id: 'st', header: 'status', cell: (r) => String(r.status ?? '') },
-    { id: 's', header: 'started_at', cell: (r) => (r.started_at ? formatDate(String(r.started_at)) : '—') },
-    { id: 'f', header: 'finished_at', cell: (r) => (r.finished_at ? formatDate(String(r.finished_at)) : '—') },
+    { id: 'id', header: 'OCR 任務編號', cell: (r) => <span className="font-mono text-xs">{String(r.ocr_job_id ?? r.id ?? '')}</span> },
+    { id: 'st', header: '狀態', cell: (r) => String(r.status ?? '') },
+    { id: 's', header: '開始時間', cell: (r) => (r.started_at ? formatDate(String(r.started_at)) : '—') },
+    { id: 'f', header: '完成時間', cell: (r) => (r.finished_at ? formatDate(String(r.finished_at)) : '—') },
     {
       id: 'a',
       header: '',
@@ -52,17 +52,17 @@ export function OpsPage() {
   ]
 
   const njCols: DataTableColumn<Row>[] = [
-    { id: 'id', header: 'notification_job_id', cell: (r) => <span className="font-mono text-xs">{String(r.notification_job_id ?? '')}</span> },
-    { id: 'ch', header: 'channel', cell: (r) => String(r.channel ?? '') },
-    { id: 'to', header: 'recipient', cell: (r) => String(r.recipient ?? r.to_recipient ?? '') },
-    { id: 'st', header: 'status', cell: (r) => String(r.status ?? '') },
+    { id: 'id', header: '通知任務編號', cell: (r) => <span className="font-mono text-xs">{String(r.notification_job_id ?? '')}</span> },
+    { id: 'ch', header: '發送管道', cell: (r) => String(r.channel ?? '') },
+    { id: 'to', header: '收件人', cell: (r) => String(r.recipient ?? r.to_recipient ?? '') },
+    { id: 'st', header: '狀態', cell: (r) => String(r.status ?? '') },
   ]
 
   const ijCols: DataTableColumn<Row>[] = [
-    { id: 'id', header: 'import_job_id', cell: (r) => <span className="font-mono text-xs">{String(r.import_job_id ?? '')}</span> },
-    { id: 'jt', header: 'job_type', cell: (r) => String(r.job_type ?? '') },
-    { id: 'sn', header: 'source_name', cell: (r) => String(r.source_name ?? r.source_description ?? '') },
-    { id: 'st', header: 'status', cell: (r) => String(r.status ?? '') },
+    { id: 'id', header: '匯入任務編號', cell: (r) => <span className="font-mono text-xs">{String(r.import_job_id ?? '')}</span> },
+    { id: 'jt', header: '作業類型', cell: (r) => String(r.job_type ?? '') },
+    { id: 'sn', header: '來源名稱', cell: (r) => String(r.source_name ?? r.source_description ?? '') },
+    { id: 'st', header: '狀態', cell: (r) => String(r.status ?? '') },
     {
       id: 'a',
       header: '',
@@ -86,22 +86,22 @@ export function OpsPage() {
   ]
 
   const auditCols: DataTableColumn<Row>[] = [
-    { id: 'id', header: 'audit_log_id', cell: (r) => <span className="font-mono text-xs">{String(r.audit_log_id ?? r.id ?? '')}</span> },
-    { id: 'at', header: 'actor_type', cell: (r) => String(r.actor_type ?? '') },
-    { id: 'ac', header: 'action_code', cell: (r) => String(r.action_code ?? '') },
-    { id: 'rt', header: 'resource_type', cell: (r) => String(r.resource_type ?? '') },
-    { id: 'ca', header: 'created_at', cell: (r) => (r.created_at ? formatDate(String(r.created_at)) : '—') },
+    { id: 'id', header: '稽核編號', cell: (r) => <span className="font-mono text-xs">{String(r.audit_log_id ?? r.id ?? '')}</span> },
+    { id: 'at', header: '操作者類型', cell: (r) => String(r.actor_type ?? '') },
+    { id: 'ac', header: '操作代碼', cell: (r) => String(r.action_code ?? '') },
+    { id: 'rt', header: '資源類型', cell: (r) => String(r.resource_type ?? '') },
+    { id: 'ca', header: '發生時間', cell: (r) => (r.created_at ? formatDate(String(r.created_at)) : '—') },
   ]
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Ops 查詢" description="OCR / Notification / Import / Audit">
+      <SectionCard title="Ops 查詢" >
         <Tabs defaultValue="ocr">
           <TabsList>
-            <TabsTrigger value="ocr">OCR Jobs</TabsTrigger>
-            <TabsTrigger value="notif">Notification Jobs</TabsTrigger>
-            <TabsTrigger value="import">Import Jobs</TabsTrigger>
-            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+            <TabsTrigger value="ocr">OCR 任務</TabsTrigger>
+            <TabsTrigger value="notif">通知任務</TabsTrigger>
+            <TabsTrigger value="import">匯入任務</TabsTrigger>
+            <TabsTrigger value="audit">稽核紀錄</TabsTrigger>
           </TabsList>
           <TabsContent value="ocr">
             {ocrQ.isLoading ? (

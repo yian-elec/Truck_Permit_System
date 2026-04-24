@@ -52,8 +52,13 @@ export function ReviewCaseSummary({ application }: { application: App }) {
         ) : (
           <ul className="divide-border divide-y rounded-md border text-sm">
             {vehicles.map((v, i) => (
-              <li key={i} className="px-3 py-2 font-mono text-xs">
-                {JSON.stringify(v)}
+              <li key={i} className="grid gap-1 px-3 py-2.5 sm:grid-cols-2">
+                {Object.entries(v).map(([k, val]) => (
+                  <div key={k} className="flex gap-1.5 text-xs">
+                    <span className="shrink-0 font-medium text-foreground capitalize">{k.replace(/_/g, ' ')}：</span>
+                    <span className="text-muted-foreground">{String(val ?? '—')}</span>
+                  </div>
+                ))}
               </li>
             ))}
           </ul>

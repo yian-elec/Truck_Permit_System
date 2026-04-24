@@ -67,7 +67,7 @@ export function RuleListPage() {
           <Link to={routePaths.ruleDetail('new')}>新增規則</Link>
         </Button>
       </div>
-      <SectionCard title="限制規則" description="後端支援 layer / is_active 篩選；rule_type 與關鍵字為前端篩選。">
+      <SectionCard title="限制規則">
         <FilterBar>
           <RuleFilters
             layerId={layerId}

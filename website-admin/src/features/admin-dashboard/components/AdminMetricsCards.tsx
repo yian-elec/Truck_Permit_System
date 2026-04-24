@@ -31,7 +31,7 @@ export function AdminMetricsCards({ loading, totalOpen, inReview, payloadMetrics
   const extraFailed = payloadMetrics?.failed_jobs_recent
 
   return (
-    <SectionCard title="KPI 指標" description="待審與進行中任務取自審查 dashboard；其餘欄位若後端有填入 page model 一併顯示。">
+    <SectionCard title="任務總覽">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="待審／開放任務" value={totalOpen} />
         <Metric label="審查中任務" value={inReview} />
