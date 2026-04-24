@@ -4,7 +4,7 @@ import { ArrowRight, Download, Shield, Clock, CheckCircle, Truck, FileText, Help
 
 import { withReturnQuery } from '@/features/auth/lib/safe-return-url'
 import { routePaths } from '@/shared/constants/route-paths'
-import { PageContainer, SectionCard } from '@/shared/ui'
+import { PageContainer } from '@/shared/ui'
 
 import { useAuthStore } from '@/features/auth/store/auth.store'
 
@@ -112,13 +112,10 @@ export function ServiceHomePage() {
         </div>
 
         {/* Case Description */}
-        <SectionCard
-          title="案件說明"
-          description="新北市政府警察局交通警察大隊辦理之大貨車臨時通行證相關資訊。"
-          className="shadow-sm"
-        >
+        <div>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">申請詳細資訊</h2>
           <CaseDescriptionContent />
-        </SectionCard>
+        </div>
 
         {/* CTA */}
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
