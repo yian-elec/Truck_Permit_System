@@ -85,9 +85,9 @@ export function ReviewRoutePage() {
   if (!plan) {
     return (
       <div className="space-y-6 pb-16">
-        <SectionCard title="路線規劃" description="此案件尚無 route plan">
+        <SectionCard title="路線規劃">
           <p className="text-muted-foreground text-sm">
-            申請人於申請端儲存之路線需求會寫入 routing；承辦於此按「執行自動規劃」讀取該筆資料以產生候選（UC-ROUTE-02）。若尚無資料，請確認申請人已儲存路線。
+            尚無路線資料。請確認申請人已儲存路線後，點選「執行自動規劃」以產生候選路線。
           </p>
         </SectionCard>
         <SectionCard title="規則命中">
@@ -120,7 +120,7 @@ export function ReviewRoutePage() {
 
   return (
     <div className="space-y-6 pb-16">
-      <SectionCard title="路線摘要" description="最新 route plan 狀態">
+      <SectionCard title="路線摘要">
         <RoutePlanPanel
           status={String(plan.status ?? plan['status'] ?? '')}
           mapVersion={String(plan.map_version ?? plan['map_version'] ?? '')}
@@ -130,7 +130,7 @@ export function ReviewRoutePage() {
       </SectionCard>
 
       {noRouteMessage ? (
-        <SectionCard title="無可行路線" description="後端回傳之說明（候選表會顯示「無候選路線」）">
+        <SectionCard title="無可行路線">
           <p className="text-destructive text-sm whitespace-pre-wrap">{noRouteMessage}</p>
         </SectionCard>
       ) : null}
@@ -145,7 +145,7 @@ export function ReviewRoutePage() {
 
       <SectionCard
         title="已選路線 — 行經道路"
-        description="依候選路線的 segments 列出道路名稱與路段指引；與實際路網供應商資料一致時即可作為承辦參考。"
+
       >
         <SelectedRouteItinerary candidates={candidates} selectedId={selectedId ?? undefined} />
       </SectionCard>

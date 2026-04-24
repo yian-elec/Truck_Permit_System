@@ -42,7 +42,7 @@ export function ReviewTaskListPage() {
 
   return (
     <div className="space-y-4">
-      <SectionCard title="審查任務" description="承辦工作台任務列表">
+      <SectionCard title="審查任務" >
         <FilterBar>
           <ReviewTaskFilters
             keyword={keyword}

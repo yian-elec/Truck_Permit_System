@@ -11,7 +11,7 @@ export function AdminOpsFeed({ loading, feed }: Props) {
     return <div className="bg-muted/40 h-32 animate-pulse rounded-md" />
   }
   if (!feed || Object.keys(feed).length === 0) {
-    return <EmptyState title="尚無活動資料" description="後端填入 ops_activity_feed payload 後會顯示於此。" />
+    return <EmptyState title="尚無活動資料" description="目前尚無最近活動紀錄。" />
   }
   return <JsonPreview value={feed} />
 }
