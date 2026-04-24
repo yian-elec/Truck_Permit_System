@@ -28,7 +28,12 @@ export function OcrSummaryPanel({ applicationId }: { applicationId: string }) {
 
   const summary = q.data?.ocr_summary ?? {}
   if (Object.keys(summary).length === 0) {
-    return <EmptyState title="尚無 OCR 辨識資料" />
+    return (
+      <EmptyState
+        title="尚無文件辨識內容"
+        description="若已上傳附件，系統處理完成後會出現欄位摘要；否則請先提醒申請人上傳。此狀態在尚未產生結果時屬正常。"
+      />
+    )
   }
 
   return (

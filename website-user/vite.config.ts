@@ -5,6 +5,9 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // 供區網用 http://<本機IP>:<port> 存取
+  server: { host: true },
+  preview: { host: true },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

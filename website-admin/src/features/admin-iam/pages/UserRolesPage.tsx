@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { SectionCard } from '@/shared/ui'
+import { formatPermissionLabel } from '@/shared/utils/admin-operator-copy'
 
 import { usePermissions } from '@/features/auth/hooks/usePermissions'
 import { useMe } from '@/features/auth/hooks/useMe'
@@ -16,36 +17,46 @@ export function UserRolesPage() {
 
   return (
     <div className="space-y-6">
-      <SectionCard title="使用者摘要" >
-        <p className="text-sm">
-          使用者 ID：<span className="font-mono text-xs">{userId}</span>
+      <p className="text-muted-foreground text-sm">此頁以管理者設定帳號可執行的工作為主。</p>
+
+      <SectionCard title="帳號">
+        <p className="text-sm text-foreground">
+          {me.data?.displayName ? (
+            <span>
+              使用者 <span className="font-medium">{me.data.displayName}</span>（{me.data.email}）
+            </span>
+          ) : (
+            <span>帳號識別碼（系統內用）：<span className="font-mono text-xs text-muted-foreground">{userId}</span></span>
+          )}
         </p>
         {me.data ? (
-          <p className="text-muted-foreground mt-2 text-sm">
-            登入者：{me.data.displayName}（{me.data.email}）
+          <p className="text-muted-foreground mt-2 text-xs">
+            內部識別碼：<span className="font-mono">{userId}</span>
           </p>
         ) : null}
       </SectionCard>
 
-      <SectionCard title="有效權限" >
+      <SectionCard title="目前擁有權限（說明）">
         {perm.isLoading ? (
           <p className="text-muted-foreground text-sm">載入中…</p>
         ) : (
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {(perm.data ?? []).map((p: string, i: number) => (
-              <li key={i} className="rounded-md bg-muted px-3 py-1.5 text-xs font-mono text-foreground">{p}</li>
+              <li key={i} className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">
+                {formatPermissionLabel(p)}
+              </li>
             ))}
           </ul>
         )}
       </SectionCard>
 
-      <SectionCard title="角色指派" >
+      <SectionCard title="角色">
         <button
           type="button"
           className="text-primary text-sm font-medium underline"
           onClick={() => setOpen(true)}
         >
-          開啟指派角色
+          指派或變更角色
         </button>
         <AssignRoleDialog userId={userId} open={open} onOpenChange={setOpen} />
       </SectionCard>

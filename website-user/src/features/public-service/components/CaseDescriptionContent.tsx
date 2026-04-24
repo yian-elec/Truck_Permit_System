@@ -4,7 +4,7 @@ import {
   ChevronUp,
   MapPin,
   Phone,
-  Fax,
+  Printer,
   User,
   Building2,
   FileText,
@@ -73,7 +73,7 @@ export function CaseDescriptionContent() {
             <span>(02)22255999 # 4517</span>
           </div>
           <div className="flex items-start gap-2">
-            <Fax className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <Printer className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span>(02)22259997</span>
           </div>
         </div>

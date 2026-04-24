@@ -4,7 +4,11 @@ type Row = Record<string, unknown>
 
 export function CommentList({ comments }: { comments: Row[] }) {
   if (comments.length === 0) {
-    return <p className="text-muted-foreground text-sm">尚無評論</p>
+    return (
+      <p className="text-muted-foreground text-sm leading-relaxed">
+        尚無審核意見。此為正常情況（例如剛分派、尚無內部討論）。若需與同儕或承辦溝通，可在下方填寫後送出。
+      </p>
+    )
   }
   return (
     <ul className="space-y-3">

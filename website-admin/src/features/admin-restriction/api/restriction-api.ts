@@ -29,6 +29,21 @@ const detailSchema = listItemSchema.extend({
 export type RuleListItem = z.infer<typeof listItemSchema>
 export type RuleDetail = z.infer<typeof detailSchema>
 
+/** 後端 rule_type 與後台顯示名稱（與路由限制領域一致） */
+export const RULE_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: '全部' },
+  { value: 'forbidden_zone', label: '禁行區域' },
+  { value: 'warning_zone', label: '警示區域' },
+  { value: 'exception_road', label: '例外道路' },
+  { value: 'forbidden_road', label: '禁行道路' },
+]
+
+const ruleTypeLabel = new Map(RULE_TYPE_OPTIONS.filter((o) => o.value).map((o) => [o.value, o.label]))
+
+export function formatRuleTypeLabel(ruleType: string): string {
+  return ruleTypeLabel.get(ruleType) ?? ruleType.replace(/_/g, ' ')
+}
+
 export async function listRules(params: { layer_id?: string; is_active?: boolean }) {
   const { data } = await get<unknown>(endpoints.admin.restrictionsRules, { params })
   return parseResponse(z.array(listItemSchema), data)

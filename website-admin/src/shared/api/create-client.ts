@@ -1,12 +1,12 @@
 import axios from 'axios'
 
-import { appConfig } from '@/shared/config/app-config'
+import { getApiBaseUrl } from '@/shared/config/get-api-base-url'
 
 import { applyInterceptors } from './interceptors'
 
 export function createApiClient() {
   const client = axios.create({
-    baseURL: appConfig.apiBaseUrl || undefined,
+    baseURL: getApiBaseUrl() || undefined,
     timeout: 30_000,
     headers: {
       'Content-Type': 'application/json',

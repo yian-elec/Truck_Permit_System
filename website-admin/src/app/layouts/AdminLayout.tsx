@@ -9,9 +9,9 @@ import {
   ClipboardList,
   ShieldAlert,
   Map,
-  Terminal,
   UserCog,
   Truck,
+  ScrollText,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui'
-import { routePaths } from '@/shared/constants/route-paths'
+import { routePaths, workCenterUrl } from '@/shared/constants/route-paths'
 import { cn } from '@/shared/lib/cn'
 
 import { useLogout } from '@/features/auth/hooks/useLogout'
@@ -35,28 +35,35 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { useAppStore } from '../store/app.store'
 import { useUiStore } from '../store/ui.store'
 
-const navItems = [
-  { to: routePaths.adminHome, label: '儀表板', icon: LayoutDashboard, end: true },
-  { to: routePaths.reviewTasks, label: '待審任務', icon: ClipboardList, end: false },
-  { to: routePaths.ruleList, label: '規則管理', icon: ShieldAlert, end: false },
-  { to: routePaths.mapImports, label: '圖資管理', icon: Map, end: false },
-  { to: routePaths.ops, label: '系統查詢', icon: Terminal, end: false },
-]
+const mainNavItems = [
+  { to: routePaths.adminHome, label: '今日工作', icon: LayoutDashboard, end: true },
+  { to: workCenterUrl('review'), label: '申請審核', icon: ClipboardList, workCenter: true as const },
+  { to: routePaths.ruleList, label: '管制規則', icon: ShieldAlert, end: false },
+  { to: routePaths.mapImports, label: '圖資', icon: Map, end: false },
+  { to: routePaths.auditLog, label: '操作紀錄', icon: ScrollText, end: false },
+] as const
+
+/** 作業中心 `/admin/work` 與獨立「操作紀錄」分開後，此項目在整段作業中心路徑皆可反白。 */
+function isWorkCenterNavActive(pathname: string): boolean {
+  return pathname === routePaths.workCenter
+}
 
 function breadcrumbFromPath(pathname: string): { label: string; to?: string }[] {
-  const crumbs: { label: string; to?: string }[] = [{ label: '管理後台', to: routePaths.adminHome }]
-  if (pathname === routePaths.adminHome) return crumbs
-  if (pathname.startsWith('/admin/review/tasks')) {
-    return [...crumbs, { label: '待審任務' }]
+  const roots: { label: string; to?: string }[] = [{ label: '管理後台', to: routePaths.adminHome }]
+  if (pathname === routePaths.adminHome) {
+    return [...roots, { label: '今日工作' }]
+  }
+  if (pathname.startsWith(routePaths.workCenter) || pathname.startsWith('/admin/review/tasks')) {
+    return [...roots, { label: '待處理工作', to: routePaths.workCenter }]
   }
   if (pathname.includes('/admin/review/applications/') && pathname.endsWith('/route')) {
-    return [...crumbs, { label: '待審任務', to: routePaths.reviewTasks }, { label: '路線審查' }]
+    return [...roots, { label: '待處理工作', to: workCenterUrl('review') }, { label: '路線審查' }]
   }
   if (pathname.includes('/admin/review/applications/')) {
-    return [...crumbs, { label: '待審任務', to: routePaths.reviewTasks }, { label: '單案審核' }]
+    return [...roots, { label: '待處理工作', to: workCenterUrl('review') }, { label: '單案審核' }]
   }
   if (pathname.startsWith('/admin/restrictions/rules')) {
-    const parts = [...crumbs, { label: '規則管理', to: routePaths.ruleList }]
+    const parts = [...roots, { label: '管制規則', to: routePaths.ruleList }]
     const segs = pathname.split('/').filter(Boolean)
     const ruleId = segs[segs.length - 1]
     if (segs.length > 3 && ruleId && ruleId !== 'rules') {
@@ -65,15 +72,18 @@ function breadcrumbFromPath(pathname: string): { label: string; to?: string }[] 
     return parts
   }
   if (pathname.startsWith(routePaths.mapImports)) {
-    return [...crumbs, { label: '圖資管理' }]
+    return [...roots, { label: '圖資' }]
   }
-  if (pathname.startsWith(routePaths.ops)) {
-    return [...crumbs, { label: '系統查詢' }]
+  if (pathname.startsWith(routePaths.auditLog)) {
+    return [...roots, { label: '操作紀錄' }]
+  }
+  if (pathname.startsWith('/admin/ops')) {
+    return [...roots, { label: '待處理工作', to: workCenterUrl('ocr') }]
   }
   if (pathname.includes('/admin/users/') && pathname.endsWith('/roles')) {
-    return [...crumbs, { label: '角色權限' }]
+    return [...roots, { label: '帳號權限' }]
   }
-  return [...crumbs, { label: pathname }]
+  return [...roots, { label: pathname }]
 }
 
 export function AdminLayout() {
@@ -117,30 +127,34 @@ export function AdminLayout() {
 
         {/* Nav */}
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 py-3">
-          {navItems.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-sidebar-active text-sidebar-active-foreground'
-                    : 'text-sidebar-muted-foreground hover:bg-sidebar-muted hover:text-sidebar-foreground',
-                  !sidebarOpen && 'justify-center px-2',
-                )
-              }
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {sidebarOpen && <span>{label}</span>}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Bottom — 固定在底部 */}
-        <div className="shrink-0 border-t border-sidebar-muted p-2 space-y-1">
-          {/* 角色權限 */}
+          {mainNavItems.map((item) => {
+            const { to, label, icon: Icon } = item
+            const end = 'end' in item ? item.end : undefined
+            const isWorkCenterItem = 'workCenter' in item && item.workCenter
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) => {
+                  let active = isActive
+                  if (isWorkCenterItem) {
+                    active = isWorkCenterNavActive(location.pathname)
+                  }
+                  return cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-sidebar-active text-sidebar-active-foreground'
+                      : 'text-sidebar-muted-foreground hover:bg-sidebar-muted hover:text-sidebar-foreground',
+                    !sidebarOpen && 'justify-center px-2',
+                  )
+                }}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {sidebarOpen && <span>{label}</span>}
+              </NavLink>
+            )
+          })}
           {user?.id ? (
             <NavLink
               to={routePaths.userRoles(user.id)}
@@ -155,9 +169,13 @@ export function AdminLayout() {
               }
             >
               <UserCog className="h-4 w-4 shrink-0" />
-              {sidebarOpen && <span>角色權限</span>}
+              {sidebarOpen && <span>帳號權限</span>}
             </NavLink>
           ) : null}
+        </nav>
+
+        {/* Bottom — 固定在底部 */}
+        <div className="shrink-0 border-t border-sidebar-muted p-2 space-y-1">
 
           {/* 帳號 */}
           <DropdownMenu>

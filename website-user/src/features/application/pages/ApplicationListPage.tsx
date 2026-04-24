@@ -8,7 +8,7 @@ import {
   formatApplicationStatus,
 } from '@/shared/utils/format-application-status'
 import { formatDate } from '@/shared/utils/format-date'
-import { Button, EmptyState, Input, PageContainer, SectionCard, Select, StatusBadge } from '@/shared/ui'
+import { Button, EmptyState, PageContainer, Select, StatusBadge } from '@/shared/ui'
 
 import { useMyApplications } from '@/features/applicant-home/hooks/useMyApplications'
 

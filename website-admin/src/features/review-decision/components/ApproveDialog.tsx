@@ -50,6 +50,7 @@ function overrideLabel(o: Record<string, unknown>): string {
 
 export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
   const queryClient = useQueryClient()
+  const [confirmStep, setConfirmStep] = useState(false)
   const [reason, setReason] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
@@ -66,6 +67,10 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
   const plan = planQuery.data
   const candidates = (plan?.candidates ?? []) as Record<string, unknown>[]
   const overrides = (plan?.officer_overrides ?? []) as Record<string, unknown>[]
+
+  useEffect(() => {
+    if (!open) setConfirmStep(false)
+  }, [open])
 
   useEffect(() => {
     if (!open || !plan) return
@@ -123,6 +128,7 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
     },
     onSuccess: async () => {
       toast.success('已核准')
+      setConfirmStep(false)
       onOpenChange(false)
       await queryClient.invalidateQueries({ queryKey: queryKeys.review.caseDetail(applicationId) })
       await queryClient.invalidateQueries({ queryKey: queryKeys.review.tasks })
@@ -151,117 +157,145 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>核准</DialogTitle>
-          <DialogDescription>核准申請並可指定許可期間與綁定之路線（候選或人工改線擇一）。</DialogDescription>
+          <DialogDescription>
+            {confirmStep
+              ? '請再次確認。核准後系統會通知申請人，案件狀態將變為「已核准」。'
+              : '填寫核准內容與路線綁定，再進入確認步驟。'}
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <label className="text-muted-foreground text-xs font-medium">理由</label>
-            <textarea
-              className="border-input bg-background mt-1 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-muted-foreground text-xs font-medium">核准起</label>
-              <Input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+        {confirmStep ? (
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+              <p className="font-medium text-foreground">確定核准這件申請？</p>
+              <p className="text-muted-foreground mt-2 text-xs">
+                核准後，申請人會收到通知，案件狀態會變成「已核准」。
+              </p>
             </div>
-            <div>
-              <label className="text-muted-foreground text-xs font-medium">核准迄</label>
-              <Input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setConfirmStep(false)} disabled={mutation.isPending}>
+                取消
+              </Button>
+              <Button type="button" loading={mutation.isPending} onClick={() => mutation.mutate()}>
+                確定核准
+              </Button>
             </div>
           </div>
-
-          {planQuery.isLoading ? (
-            <p className="text-muted-foreground text-sm">載入路線資料…</p>
-          ) : planQuery.isError ? (
-            <p className="text-destructive text-sm">無法載入路線規劃，請稍後再試或至路線審查頁確認。</p>
-          ) : !plan ? (
-            <p className="text-muted-foreground text-sm">尚無路線規劃資料；若需綁定路線請先執行規劃或人工改線。</p>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">核准綁定路線</span>
-                <p className="text-muted-foreground text-xs">
-                  請擇一：以自動規劃候選為準，或以人工改線紀錄為準（不可同時指定兩者）。
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      className="h-4 w-4"
-                      checked={routeBinding === 'candidate'}
-                      disabled={candidateOptions.length === 0}
-                      onChange={() => setRouteBinding('candidate')}
-                    />
-                    使用候選路線
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      className="h-4 w-4"
-                      checked={routeBinding === 'override'}
-                      disabled={overrideOptions.length === 0}
-                      onChange={() => setRouteBinding('override')}
-                    />
-                    使用人工改線
-                  </label>
-                </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="text-muted-foreground text-xs font-medium">理由</label>
+              <textarea
+                className="border-input bg-background mt-1 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-muted-foreground text-xs font-medium">核准起</label>
+                <Input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
               </div>
+              <div>
+                <label className="text-muted-foreground text-xs font-medium">核准迄</label>
+                <Input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+              </div>
+            </div>
 
-              {routeBinding === 'candidate' ? (
-                <div>
-                  <label className="text-muted-foreground text-xs font-medium">候選路線</label>
-                  {candidateOptions.length === 0 ? (
-                    <p className="text-muted-foreground mt-1 text-sm">目前無候選路線可選。</p>
-                  ) : (
-                    <select
-                      className={cn(selectClassName, 'mt-1')}
-                      value={selectedCandidateId}
-                      onChange={(e) => setSelectedCandidateId(e.target.value)}
-                    >
-                      <option value="" disabled>
-                        請選擇候選路線
-                      </option>
-                      {candidateOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+            {planQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">載入路線資料…</p>
+            ) : planQuery.isError ? (
+              <p className="text-destructive text-sm">無法載入路線規劃，請稍後再試或至路線審查頁確認。</p>
+            ) : !plan ? (
+              <p className="text-muted-foreground text-sm">尚無路線規劃資料；若需綁定路線請先執行規劃或人工改線。</p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">核准綁定路線</span>
+                  <p className="text-muted-foreground text-xs">
+                    請擇一：以自動規劃候選為準，或以人工改線紀錄為準（不可同時指定兩者）。
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        className="h-4 w-4"
+                        checked={routeBinding === 'candidate'}
+                        disabled={candidateOptions.length === 0}
+                        onChange={() => setRouteBinding('candidate')}
+                      />
+                      使用候選路線
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        className="h-4 w-4"
+                        checked={routeBinding === 'override'}
+                        disabled={overrideOptions.length === 0}
+                        onChange={() => setRouteBinding('override')}
+                      />
+                      使用人工改線
+                    </label>
+                  </div>
                 </div>
-              ) : (
-                <div>
-                  <label className="text-muted-foreground text-xs font-medium">人工改線紀錄</label>
-                  {overrideOptions.length === 0 ? (
-                    <p className="text-muted-foreground mt-1 text-sm">尚無人工改線紀錄；請先於路線審查執行「人工改線」。</p>
-                  ) : (
-                    <select
-                      className={cn(selectClassName, 'mt-1')}
-                      value={selectedOverrideId}
-                      onChange={(e) => setSelectedOverrideId(e.target.value)}
-                    >
-                      <option value="" disabled>
-                        請選擇改線紀錄
-                      </option>
-                      {overrideOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
-            </>
-          )}
 
-          <Button type="button" className="w-full" loading={mutation.isPending} onClick={() => mutation.mutate()}>
-            確認核准
-          </Button>
-        </div>
+                {routeBinding === 'candidate' ? (
+                  <div>
+                    <label className="text-muted-foreground text-xs font-medium">候選路線</label>
+                    {candidateOptions.length === 0 ? (
+                      <p className="text-muted-foreground mt-1 text-sm">目前無候選路線可選。</p>
+                    ) : (
+                      <select
+                        className={cn(selectClassName, 'mt-1')}
+                        value={selectedCandidateId}
+                        onChange={(e) => setSelectedCandidateId(e.target.value)}
+                      >
+                        <option value="" disabled>
+                          請選擇候選路線
+                        </option>
+                        {candidateOptions.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-muted-foreground text-xs font-medium">人工改線紀錄</label>
+                    {overrideOptions.length === 0 ? (
+                      <p className="text-muted-foreground mt-1 text-sm">尚無人工改線紀錄；請先於路線審查執行「人工改線」。</p>
+                    ) : (
+                      <select
+                        className={cn(selectClassName, 'mt-1')}
+                        value={selectedOverrideId}
+                        onChange={(e) => setSelectedOverrideId(e.target.value)}
+                      >
+                        <option value="" disabled>
+                          請選擇改線紀錄
+                        </option>
+                        {overrideOptions.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            <Button
+              type="button"
+              className="w-full"
+              onClick={() => setConfirmStep(true)}
+              disabled={planQuery.isLoading}
+            >
+              下一步：確認核准
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

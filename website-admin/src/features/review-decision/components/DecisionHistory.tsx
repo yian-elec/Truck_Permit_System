@@ -5,7 +5,11 @@ type Row = Record<string, unknown>
 
 export function DecisionHistory({ decisions }: { decisions: Row[] }) {
   if (decisions.length === 0) {
-    return <p className="text-muted-foreground text-sm">尚無決策紀錄</p>
+    return (
+      <p className="text-muted-foreground text-sm">
+        目前沒有決策紀錄。完成核准、駁回或補件要求後，會依序顯示在這裡。
+      </p>
+    )
   }
   return (
     <ul className="space-y-2">

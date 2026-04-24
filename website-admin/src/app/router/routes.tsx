@@ -2,7 +2,8 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 
 import { AdminDashboardPage } from '@/features/admin-dashboard/pages/AdminDashboardPage'
 import { MapImportPage } from '@/features/admin-map-import/pages/MapImportPage'
-import { OpsPage } from '@/features/admin-ops/pages/OpsPage'
+import { AuditLogPage } from '@/features/admin-work/pages/AuditLogPage'
+import { WorkCenterPage } from '@/features/admin-work/pages/WorkCenterPage'
 import { RuleDetailPage } from '@/features/admin-restriction/pages/RuleDetailPage'
 import { RuleListPage } from '@/features/admin-restriction/pages/RuleListPage'
 import { UserRolesPage } from '@/features/admin-iam/pages/UserRolesPage'
@@ -10,8 +11,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { MfaPage } from '@/features/auth/pages/MfaPage'
 import { ReviewCasePage } from '@/features/review-case/pages/ReviewCasePage'
 import { ReviewRoutePage } from '@/features/review-routing/pages/ReviewRoutePage'
-import { ReviewTaskListPage } from '@/features/review-task/pages/ReviewTaskListPage'
-import { routePaths } from '@/shared/constants/route-paths'
+import { routePaths, workCenterUrl } from '@/shared/constants/route-paths'
 
 import { AdminLayout } from '../layouts/AdminLayout'
 import { AppLayout } from '../layouts/AppLayout'
@@ -53,13 +53,15 @@ export const appRoutes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <AdminDashboardPage /> },
-      { path: 'review/tasks', element: <ReviewTaskListPage /> },
+      { path: 'work', element: <WorkCenterPage /> },
+      { path: 'audit-log', element: <AuditLogPage /> },
+      { path: 'review/tasks', element: <Navigate to={workCenterUrl('review')} replace /> },
       { path: 'review/applications/:applicationId', element: <ReviewCasePage /> },
       { path: 'review/applications/:applicationId/route', element: <ReviewRoutePage /> },
       { path: 'restrictions/rules', element: <RuleListPage /> },
       { path: 'restrictions/rules/:ruleId', element: <RuleDetailPage /> },
       { path: 'map-imports', element: <MapImportPage /> },
-      { path: 'ops', element: <OpsPage /> },
+      { path: 'ops', element: <Navigate to={workCenterUrl('ocr')} replace /> },
       { path: 'users/:userId/roles', element: <UserRolesPage /> },
     ],
   },

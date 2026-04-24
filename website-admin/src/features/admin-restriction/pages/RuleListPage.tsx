@@ -5,11 +5,14 @@ import { Link } from 'react-router-dom'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { routePaths } from '@/shared/constants/route-paths'
 import { ApiError } from '@/shared/api/api-error'
+import { formatRulePriority } from '@/shared/utils/admin-operator-copy'
 import { formatDate } from '@/shared/utils/format-date'
 import { Button, DataTable, type DataTableColumn, FilterBar, SectionCard, StatusBadge } from '@/shared/ui'
 
+import { listMapLayers } from '@/features/admin-map-layer/api/map-layer-api'
+
 import type { RuleListItem } from '../api/restriction-api'
-import { listRules } from '../api/restriction-api'
+import { formatRuleTypeLabel, listRules } from '../api/restriction-api'
 import { RuleFilters } from '../components/RuleFilters'
 
 export function RuleListPage() {
@@ -27,10 +30,20 @@ export function RuleListPage() {
       }),
   })
 
+  const layersQ = useQuery({
+    queryKey: queryKeys.admin.mapLayers,
+    queryFn: listMapLayers,
+  })
+
+  const layerLabel = useMemo(() => {
+    const m = new Map((layersQ.data ?? []).map((l) => [l.layer_id, `${l.layer_name}（v${l.version_no}）`]))
+    return (id: string) => m.get(id)
+  }, [layersQ.data])
+
   const filtered = useMemo(() => {
     const rows = q.data ?? []
     return rows.filter((r) => {
-      if (ruleType && !r.rule_type.toLowerCase().includes(ruleType.toLowerCase())) return false
+      if (ruleType && r.rule_type !== ruleType) return false
       if (keyword) {
         const k = keyword.toLowerCase()
         if (!r.rule_name.toLowerCase().includes(k) && !r.rule_id.toLowerCase().includes(k)) return false
@@ -41,8 +54,24 @@ export function RuleListPage() {
 
   const columns: DataTableColumn<RuleListItem>[] = [
     { id: 'name', header: '規則名稱', cell: (r) => r.rule_name },
-    { id: 'type', header: '類型', cell: (r) => r.rule_type },
-    { id: 'prio', header: '優先級', cell: (r) => String(r.priority) },
+    {
+      id: 'layer',
+      header: '圖資版本',
+      cell: (r) => layerLabel(r.layer_id) ?? `${r.layer_id.slice(0, 8)}…`,
+    },
+    { id: 'type', header: '規則類型', cell: (r) => formatRuleTypeLabel(r.rule_type) },
+    {
+      id: 'prio',
+      header: '優先級',
+      cell: (r) => {
+        const { level, hint } = formatRulePriority(r.priority)
+        return (
+          <span className="text-sm" title={`${hint}（系統權重 ${r.priority}）`}>
+            {level}
+          </span>
+        )
+      },
+    },
     {
       id: 'active',
       header: '啟用',
