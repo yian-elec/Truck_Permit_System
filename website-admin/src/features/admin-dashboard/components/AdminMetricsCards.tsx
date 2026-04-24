@@ -1,10 +1,8 @@
-import { SectionCard } from '@/shared/ui'
-
 function Metric({ label, value }: { label: string; value: string | number | undefined }) {
   return (
-    <div className="border-border bg-card rounded-lg border p-4 shadow-sm">
-      <p className="text-muted-foreground text-xs font-medium uppercase">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value ?? '—'}</p>
+    <div className="rounded-xl border border-border bg-background p-5 shadow-sm">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{value ?? '—'}</p>
     </div>
   )
 }
@@ -21,7 +19,7 @@ export function AdminMetricsCards({ loading, totalOpen, inReview, payloadMetrics
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-muted/40 h-24 animate-pulse rounded-lg" />
+          <div key={i} className="h-24 animate-pulse rounded-xl bg-muted/40" />
         ))}
       </div>
     )
@@ -31,19 +29,17 @@ export function AdminMetricsCards({ loading, totalOpen, inReview, payloadMetrics
   const extraFailed = payloadMetrics?.failed_jobs_recent
 
   return (
-    <SectionCard title="任務總覽">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="待審／開放任務" value={totalOpen} />
-        <Metric label="審查中任務" value={inReview} />
-        <Metric
-          label="最近匯入作業"
-          value={typeof extraPending === 'number' ? extraPending : '—'}
-        />
-        <Metric
-          label="最近異常作業"
-          value={typeof extraFailed === 'number' ? extraFailed : '—'}
-        />
-      </div>
-    </SectionCard>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Metric label="待審／開放任務" value={totalOpen} />
+      <Metric label="審查中任務" value={inReview} />
+      <Metric
+        label="最近匯入作業"
+        value={typeof extraPending === 'number' ? extraPending : '—'}
+      />
+      <Metric
+        label="最近異常作業"
+        value={typeof extraFailed === 'number' ? extraFailed : '—'}
+      />
+    </div>
   )
 }

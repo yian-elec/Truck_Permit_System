@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { routePaths } from '@/shared/constants/route-paths'
-import { JsonPreview, SectionCard } from '@/shared/ui'
+import { SectionCard } from '@/shared/ui'
 
 import { getAdminDashboardModel, getReviewDashboardCounts } from '../api/dashboard-api'
 import { AdminMetricsCards } from '../components/AdminMetricsCards'
@@ -54,11 +54,6 @@ export function AdminDashboardPage() {
         <AdminOpsFeed loading={modelQuery.isLoading} feed={opsFeedPayload} />
       </SectionCard>
 
-      {import.meta.env.DEV && modelQuery.data ? (
-        <SectionCard title="Page model（開發除錯）" description="正式環境不顯示">
-          <JsonPreview value={modelQuery.data} />
-        </SectionCard>
-      ) : null}
     </div>
   )
 }
