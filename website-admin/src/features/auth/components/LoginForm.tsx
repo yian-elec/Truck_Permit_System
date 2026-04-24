@@ -29,12 +29,13 @@ export function LoginForm() {
       <Form onSubmit={form.handleSubmit(onSubmit)}>
         <FormField<LoginFormValues>
           name="email"
-          label="Email or username"
+          label="帳號 / Email"
           children={(field) => (
             <Input
               id="email"
               type="text"
               autoComplete="username"
+              placeholder="請輸入帳號或 Email"
               name={field.name}
               ref={field.ref as React.Ref<HTMLInputElement>}
               value={String(field.value ?? '')}
@@ -45,12 +46,13 @@ export function LoginForm() {
         />
         <FormField<LoginFormValues>
           name="password"
-          label="Password"
+          label="密碼"
           children={(field) => (
             <Input
               id="password"
               type="password"
               autoComplete="current-password"
+              placeholder="請輸入密碼"
               name={field.name}
               ref={field.ref as React.Ref<HTMLInputElement>}
               value={String(field.value ?? '')}
@@ -60,12 +62,12 @@ export function LoginForm() {
           )}
         />
         {form.formState.errors.root?.message ? (
-          <p className="text-sm text-destructive" role="alert">
+          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
             {String(form.formState.errors.root.message)}
           </p>
         ) : null}
         <Button type="submit" className="w-full" loading={login.isPending}>
-          Sign in
+          登入
         </Button>
       </Form>
     </FormProvider>
