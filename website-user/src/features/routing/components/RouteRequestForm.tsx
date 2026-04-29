@@ -12,6 +12,15 @@ import { useCreateRouteRequest } from '../hooks/useCreateRouteRequest'
 import { useRoutePreview } from '../hooks/useRoutePreview'
 import { ROUTE_REQUEST_FORM_DEFAULTS, routePreviewToFormValues } from '../lib/route-preview-to-form'
 
+
+function isoToLocalDatetime(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function RouteRequestForm({ applicationId }: { applicationId: string }) {
   const preview = useRoutePreview(applicationId)
   const create = useCreateRouteRequest(applicationId)
@@ -42,7 +51,14 @@ export function RouteRequestForm({ applicationId }: { applicationId: string }) {
     <FormProvider {...form}>
       <Form
         onSubmit={form.handleSubmit((values) => {
-          create.mutate(values, {
+          const depDate = new Date(values.requested_departure_at)
+          const body = {
+            ...values,
+            requested_departure_at: Number.isNaN(depDate.getTime())
+              ? values.requested_departure_at
+              : depDate.toISOString(),
+          }
+          create.mutate(body, {
             onSuccess: () => toast.success('路線已儲存'),
             onError: () => toast.error('路線儲存失敗'),
           })
@@ -91,12 +107,13 @@ export function RouteRequestForm({ applicationId }: { applicationId: string }) {
             />
             <FormField<RouteRequestFormValues>
               name="requested_departure_at"
-              label="預計出發（ISO 時間）"
+              label="預計出發時間"
               children={(field) => (
                 <Input
+                  type="datetime-local"
                   name={field.name}
                   ref={field.ref as React.Ref<HTMLInputElement>}
-                  value={String(field.value ?? '')}
+                  value={isoToLocalDatetime(String(field.value ?? ''))}
                   onBlur={field.onBlur}
                   onChange={field.onChange}
                 />

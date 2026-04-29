@@ -19,7 +19,7 @@ const LEGACY_TO_ROUTE_VEHICLE_KIND: Partial<
 export const ROUTE_REQUEST_FORM_DEFAULTS: RouteRequestFormValues = {
   origin_text: '',
   destination_text: '',
-  requested_departure_at: '2026-06-01T08:00:00.000Z',
+  requested_departure_at: '2026-06-01T08:00',
   vehicle_weight_ton: 15,
   vehicle_kind: DEFAULT_VEHICLE_KIND,
 }
@@ -44,16 +44,19 @@ function parseVehicleKind(raw: string | null | undefined): RouteRequestFormValue
 /** 將 route-preview 資料轉成表單值（供已儲存之路線申請回填）。 */
 export function routePreviewToFormValues(p: RoutePreviewData): RouteRequestFormValues {
   const dep = p.requested_departure_at
-  let iso = ROUTE_REQUEST_FORM_DEFAULTS.requested_departure_at
+  let localDt = ROUTE_REQUEST_FORM_DEFAULTS.requested_departure_at
   if (dep != null && String(dep).trim() !== '') {
     const d = new Date(String(dep))
-    iso = Number.isNaN(d.getTime()) ? String(dep) : d.toISOString()
+    if (!Number.isNaN(d.getTime())) {
+      const pad = (n: number) => String(n).padStart(2, '0')
+      localDt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
   }
 
   return {
     origin_text: p.origin_text,
     destination_text: p.destination_text,
-    requested_departure_at: iso,
+    requested_departure_at: localDt,
     vehicle_weight_ton: parseWeight(p.vehicle_weight_ton),
     vehicle_kind: parseVehicleKind(p.vehicle_kind),
   }
