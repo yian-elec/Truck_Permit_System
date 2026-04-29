@@ -187,7 +187,10 @@ class ReviewQueryApplicationService:
                     requested_by=r.requested_by,
                     deadline_at=r.deadline_at,
                     status=r.status,
+                    title=r.title,
                     message=r.message,
+                    applicant_response_note=getattr(r, "applicant_response_note", None),
+                    responded_at=getattr(r, "responded_at", None),
                     created_at=r.created_at,
                     updated_at=r.updated_at,
                     items=[

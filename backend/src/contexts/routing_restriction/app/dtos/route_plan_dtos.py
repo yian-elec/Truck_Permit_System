@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class GeoPointDTO(BaseModel):
@@ -84,6 +84,22 @@ class RoutePlanDetailDTO(BaseModel):
     selected_candidate_id: UUID | None
     candidates: list[RouteCandidateDTO]
     no_route: NoRouteExplanationDTO | None
+    origin_text: str | None = Field(
+        default=None,
+        description="路線申請之起點地址／描述（與 routing.route_requests 對齊）",
+    )
+    destination_text: str | None = Field(
+        default=None,
+        description="路線申請之迄點（到達點）地址／描述",
+    )
+    origin_geo: GeoPointDTO | None = Field(
+        default=None,
+        description="起點經地理編碼後之 WGS84 座標；尚無則 null",
+    )
+    destination_geo: GeoPointDTO | None = Field(
+        default=None,
+        description="迄點經地理編碼後之 WGS84 座標；尚無則 null",
+    )
     officer_overrides: list[OfficerOverrideSummaryDTO] = Field(
         default_factory=list,
         description="本案歷次人工改線（新→舊），核准時可擇一 override_id",
@@ -104,6 +120,31 @@ class OfficerOverrideInputDTO(BaseModel):
     override_line_wkt: str = Field(..., min_length=10, description="SRID4326 LINESTRING WKT")
     override_reason: str = Field(..., min_length=1)
     base_candidate_id: UUID | None = None
+
+
+class PatchItinerarySegmentInputDTO(BaseModel):
+    """覆寫「已選候選」之路段列：路名可空；距離／時間須非負，且總距離須大於 0。"""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    road_name: str | None = None
+    distance_m: int = Field(ge=0)
+    duration_s: int = Field(ge=0)
+
+
+class PatchSelectedItineraryInputDTO(BaseModel):
+    """
+    承辦依已選路線改寫分段：依距離比例切分候選 LINESTRING；
+    規則命中於寫入後依新路段重算（ST_Intersects）。
+    """
+
+    segments: list[PatchItinerarySegmentInputDTO] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _total_distance_positive(self) -> PatchSelectedItineraryInputDTO:
+        if sum(s.distance_m for s in self.segments) <= 0:
+            raise ValueError("segments 之 distance_m 總和須為正")
+        return self
 
 
 class RouteRuleHitQueryDTO(BaseModel):

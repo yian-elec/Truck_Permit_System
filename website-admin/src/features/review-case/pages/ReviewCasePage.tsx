@@ -5,7 +5,8 @@ import { Link, useParams } from 'react-router-dom'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { routePaths } from '@/shared/constants/route-paths'
 import { formatOperatorStatus } from '@/shared/utils/admin-operator-copy'
-import { SectionCard, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui'
+import { readOptStr } from '@/features/review-routing/utils/route-plan-fields'
+import { InfoRow, SectionCard, Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui'
 
 import { listAuditTrail } from '@/features/review-audit/api/review-audit-api'
 import { AuditTrailPanel } from '@/features/review-audit/components/AuditTrailPanel'
@@ -22,6 +23,7 @@ import { getReviewApplication } from '../api/review-case-api'
 import { ReviewActionBar } from '../components/ReviewActionBar'
 import { ReviewCaseHeader } from '../components/ReviewCaseHeader'
 import { ReviewCaseSummary } from '../components/ReviewCaseSummary'
+import { SupplementRequestRecordsPanel } from '../components/SupplementRequestRecordsPanel'
 
 export function ReviewCasePage() {
   const { applicationId = '' } = useParams<{ applicationId: string }>()
@@ -47,6 +49,13 @@ export function ReviewCasePage() {
   const attachments = (application.attachments as Record<string, unknown>[] | undefined) ?? []
   const comments = (caseQuery.data?.comments ?? []) as Record<string, unknown>[]
   const decisions = (caseQuery.data?.decisions ?? []) as Record<string, unknown>[]
+  const supplementRequestsRaw = (caseQuery.data?.supplement_requests ??
+    []) as Record<string, unknown>[]
+  const supplementRequests = [...supplementRequestsRaw].sort((a, b) => {
+    const ta = new Date(String(a.created_at ?? 0)).getTime()
+    const tb = new Date(String(b.created_at ?? 0)).getTime()
+    return tb - ta
+  })
   const routeSnap = caseQuery.data?.route_plan
 
   if (caseQuery.isLoading) {
@@ -98,6 +107,14 @@ export function ReviewCasePage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="history">審查決定</TabsTrigger>
+          <TabsTrigger value="supplements">
+            補件紀錄
+            {supplementRequests.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-xs font-medium text-primary">
+                {supplementRequests.length}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="audit">系統內部操作</TabsTrigger>
         </TabsList>
 
@@ -126,6 +143,25 @@ export function ReviewCasePage() {
 
         <TabsContent value="route">
           <SectionCard title="路線檢查">
+            {(() => {
+              const rp =
+                routeSnap && typeof routeSnap === 'object'
+                  ? (routeSnap as Record<string, unknown>)
+                  : null
+              if (!rp) return null
+              const ot = readOptStr(rp, 'origin_text')
+              const dt = readOptStr(rp, 'destination_text')
+              if (!ot && !dt) return null
+              return (
+                <div className="border-border mb-4 rounded-md border bg-muted/20 px-3 py-2">
+                  <p className="text-muted-foreground mb-2 text-xs font-medium">申請路線起迄</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <InfoRow label="起始點">{ot ?? '—'}</InfoRow>
+                    <InfoRow label="到達點">{dt ?? '—'}</InfoRow>
+                  </div>
+                </div>
+              )
+            })()}
             {hasRoute ? (
               <div className="space-y-3">
                 <p className="text-sm text-foreground">已載入路線檢查所需資料。若要檢視地圖與風險，請到路線審查畫面。</p>
@@ -167,6 +203,12 @@ export function ReviewCasePage() {
           </SectionCard>
         </TabsContent>
 
+        <TabsContent value="supplements">
+          <SectionCard title="補件紀錄">
+            <SupplementRequestRecordsPanel requests={supplementRequests} />
+          </SectionCard>
+        </TabsContent>
+
         <TabsContent value="audit">
           <SectionCard title="內部操作與日誌">
             {auditQuery.isLoading ? (
@@ -189,6 +231,7 @@ export function ReviewCasePage() {
       {/* 固定底部操作列 */}
       <ReviewActionBar
         applicationId={applicationId}
+        applicationStatus={String(application.status ?? '')}
         onSupplement={() => setSupOpen(true)}
         onApprove={() => setApOpen(true)}
         onReject={() => setRjOpen(true)}

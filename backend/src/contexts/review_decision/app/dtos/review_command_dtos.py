@@ -12,23 +12,14 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class SupplementItemInputDTO(BaseModel):
-    """補件項目輸入。"""
-
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    item_code: str = Field(max_length=50)
-    item_name: str = Field(max_length=100)
-    required_action: str = Field(max_length=30)
-    note: str | None = None
-
-
 class RequestSupplementInputDTO(BaseModel):
     """UC-REV-03：發出補件。"""
 
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    title: str = Field(min_length=1, max_length=200)
     message: str = Field(min_length=1, max_length=20_000)
     deadline_at: datetime | None = None
-    items: list[SupplementItemInputDTO] = Field(min_length=1)
     decision_reason: str = Field(
         min_length=1,
         max_length=20_000,

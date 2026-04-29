@@ -81,14 +81,19 @@ class OsmRoadIngestService:
         now = datetime.now(timezone.utc)
 
         try:
+            # overpass-api.de：須有可識別 User-Agent；POST 宜用表單欄位 data=（見 dev.overpass-api.de）。
             r = self._client.post(
                 self._url,
-                content=query.encode("utf-8"),
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={"data": query},
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": settings.overpass_user_agent,
+                },
             )
             r.raise_for_status()
             payload = r.json()
         except (httpx.HTTPError, ValueError, TypeError) as e:
+            err_msg = str(e)[:2000]
             logger.warn(
                 f"Overpass fetch failed: {e}",
                 context="Routing",
@@ -101,9 +106,9 @@ class OsmRoadIngestService:
                 d_wkt=d_wkt,
                 query_text=query,
                 now=now,
-                error=str(e)[:2000],
+                error=err_msg,
             )
-            return None
+            return None, err_msg
 
         elements = list(payload.get("elements") or [])
         logger.info(

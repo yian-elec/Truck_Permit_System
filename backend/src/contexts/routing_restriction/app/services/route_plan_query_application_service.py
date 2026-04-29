@@ -10,6 +10,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from src.contexts.routing_restriction.app.dtos.route_plan_dtos import (
+    GeoPointDTO,
     NoRouteExplanationDTO,
     OfficerOverrideSummaryDTO,
     RouteCandidateDTO,
@@ -25,6 +26,9 @@ from src.contexts.routing_restriction.infra.repositories.officer_route_override_
 from src.contexts.routing_restriction.infra.repositories.route_plan_repository import (
     RoutePlanRepository,
 )
+from src.contexts.routing_restriction.infra.repositories.route_request_repository import (
+    RouteRequestRepository,
+)
 
 
 class RoutePlanQueryApplicationService:
@@ -35,9 +39,11 @@ class RoutePlanQueryApplicationService:
         *,
         route_plans: RoutePlanRepository | None = None,
         officer_overrides: OfficerRouteOverrideRepository | None = None,
+        route_requests: RouteRequestRepository | None = None,
     ) -> None:
         self._plans = route_plans or RoutePlanRepository()
         self._overrides = officer_overrides or OfficerRouteOverrideRepository()
+        self._requests = route_requests or RouteRequestRepository()
 
     def get_latest_route_plan(self, application_id: UUID) -> RoutePlanDetailDTO | None:
         """最新一筆規劃；無則 None。"""
@@ -45,6 +51,28 @@ class RoutePlanQueryApplicationService:
         if plan is None:
             return None
         dto = _plan_to_detail_dto(plan)
+        req = self._requests.get_by_id(plan.route_request_id)
+        if req is not None:
+            og: GeoPointDTO | None = None
+            dg: GeoPointDTO | None = None
+            if req.origin_point is not None:
+                og = GeoPointDTO(
+                    latitude=req.origin_point.latitude,
+                    longitude=req.origin_point.longitude,
+                )
+            if req.destination_point is not None:
+                dg = GeoPointDTO(
+                    latitude=req.destination_point.latitude,
+                    longitude=req.destination_point.longitude,
+                )
+            dto = dto.model_copy(
+                update={
+                    "origin_text": req.origin_text,
+                    "destination_text": req.destination_text,
+                    "origin_geo": og,
+                    "destination_geo": dg,
+                }
+            )
         ov_rows = self._overrides.list_by_application_id(application_id)
         summaries = [
             OfficerOverrideSummaryDTO(

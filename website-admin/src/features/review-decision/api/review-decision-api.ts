@@ -28,9 +28,9 @@ export async function listDecisions(applicationId: string) {
 export async function requestSupplement(
   applicationId: string,
   body: {
+    title: string
     message: string
     deadline_at: string | null
-    items: { item_code: string; item_name: string; required_action: string; note?: string | null }[]
     decision_reason: string
   },
 ) {

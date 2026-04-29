@@ -27,6 +27,9 @@ const toneMap: Record<string, string> = {
   已取消: 'bg-muted text-muted-foreground',
   新進件: 'bg-amber-500/15 text-amber-900 dark:text-amber-100',
   補件中: 'bg-amber-500/15 text-amber-900 dark:text-amber-100',
+  待補件: 'bg-amber-500/15 text-amber-900 dark:text-amber-100',
+  補件後已再送: 'bg-sky-500/15 text-sky-900 dark:text-sky-100',
+  待申請人回覆: 'bg-amber-500/15 text-amber-900 dark:text-amber-100',
   使用中: 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-100',
   未使用: 'bg-muted text-muted-foreground',
 }

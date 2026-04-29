@@ -33,7 +33,6 @@ from src.contexts.review_decision.app.dtos import (
     RejectApplicationOutputDTO,
     RequestSupplementInputDTO,
     RequestSupplementOutputDTO,
-    SupplementItemInputDTO,
 )
 from src.contexts.review_decision.app.errors import (
     ReviewConflictAppError,
@@ -50,7 +49,6 @@ from src.contexts.review_decision.app.services.review_mappers import (
     domain_review_task_to_orm,
     domain_supplement_request_to_orm,
     orm_review_task_to_domain,
-    supplement_item_vo_to_orm,
 )
 from src.contexts.review_decision.app.services.review_route_readiness import (
     build_approval_route_readiness,
@@ -69,8 +67,6 @@ from src.contexts.review_decision.domain.value_objects import (
     DecisionType,
     ReviewComment,
     ReviewStage,
-    SupplementItem,
-    SupplementRequiredAction,
 )
 from src.contexts.review_decision.infra.schema.review_comments import ReviewComments
 
@@ -173,18 +169,15 @@ class ReviewCommandApplicationService:
         decision_id = uuid4()
         supplement_request_id = uuid4()
 
-        items_vo: tuple[SupplementItem, ...] = tuple(
-            self._parse_supplement_item_dto(it) for it in inp.items
-        )
-
         sup = raise_review_domain_as_app(
             lambda: SupplementRequest.issue(
                 supplement_request_id=supplement_request_id,
                 application_id=application_id,
                 requested_by=officer_user_id,
                 deadline_at=inp.deadline_at,
+                title=inp.title,
                 message=inp.message,
-                items=items_vo,
+                items=tuple(),
                 now=now,
             ),
         )
@@ -203,15 +196,6 @@ class ReviewCommandApplicationService:
 
         self._c.decisions.add(domain_review_decision_to_orm(decision))
         self._c.supplements.add_request(domain_supplement_request_to_orm(sup))
-        for it in sup.items:
-            self._c.supplements.add_item(
-                supplement_item_vo_to_orm(
-                    supplement_item_id=uuid4(),
-                    supplement_request_id=sup.supplement_request_id,
-                    item=it,
-                    created_at=now,
-                ),
-            )
 
         app = self._load_application(application_id)
         raise_application_domain_as_app(
@@ -246,6 +230,7 @@ class ReviewCommandApplicationService:
             payload=supplement_notification_payload(
                 application_id=application_id,
                 supplement_request_id=supplement_request_id,
+                title=inp.title,
                 message=inp.message,
             ),
         )
@@ -446,22 +431,6 @@ class ReviewCommandApplicationService:
                     f"資料庫決策類型無法辨識: {r.decision_type!r}",
                 ) from e
         return tuple(out)
-
-    def _parse_supplement_item_dto(self, it: SupplementItemInputDTO) -> SupplementItem:
-        try:
-            action = SupplementRequiredAction(it.required_action)
-        except ValueError as e:
-            raise ReviewValidationAppError(
-                f"不支援的補件動作: {it.required_action!r}",
-            ) from e
-        return raise_review_domain_as_app(
-            lambda: SupplementItem(
-                item_code=it.item_code,
-                item_name=it.item_name,
-                required_action=action,
-                note=it.note,
-            ),
-        )
 
     def _close_open_review_task(self, application_id: UUID, now: datetime) -> None:
         row = self._c.tasks.find_open_task_for_application(application_id)

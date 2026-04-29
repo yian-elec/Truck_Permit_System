@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useMemo, type Ref } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
+import { useEffect, useMemo } from 'react'
+import { FormProvider, useForm, useWatch } from 'react-hook-form'
+import type { Ref } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -12,16 +13,12 @@ import type { SupplementRequestsList } from '../api/get-supplement-requests'
 import { useSupplementResponse } from '../hooks/useSupplementResponse'
 import { supplementResponseSchema, type SupplementResponseValues } from '../validators/supplement-form.schema'
 
-function buildSelectLabel(it: {
-  title: string
-  description?: string | null
-}): string {
-  const raw = (it.description ?? '').trim().replace(/\s+/g, ' ')
-  const preview = raw.length > 100 ? `${raw.slice(0, 97)}…` : raw
-  if (preview) {
-    return `${it.title} — ${preview}`
-  }
-  return it.title
+function openSupplementItems(requests: SupplementRequestsList | null | undefined) {
+  const items = requests?.items ?? []
+  return items.filter((i) => {
+    const st = 'status' in i && typeof i.status === 'string' ? i.status : 'open'
+    return st === 'open'
+  })
 }
 
 export function SupplementResponseForm({
@@ -35,16 +32,8 @@ export function SupplementResponseForm({
 }) {
   const navigate = useNavigate()
   const submit = useSupplementResponse(applicationId)
-  const items = requests?.items ?? []
 
-  const selectOptions = useMemo(
-    () =>
-      items.map((it) => ({
-        value: it.request_id,
-        label: buildSelectLabel(it),
-      })),
-    [items],
-  )
+  const openItems = useMemo(() => openSupplementItems(requests ?? null), [requests])
 
   const form = useForm<SupplementResponseValues>({
     resolver: zodResolver(supplementResponseSchema),
@@ -54,30 +43,33 @@ export function SupplementResponseForm({
     },
   })
 
+  const selectedId = useWatch({ control: form.control, name: 'supplement_request_id' }) as string
+  const selected = openItems.find((i) => i.request_id === selectedId)
+
   useEffect(() => {
-    if (items.length === 0) {
+    if (openItems.length === 0) {
       form.setValue('supplement_request_id', '')
       return
     }
     const preferred =
-      defaultRequestId && items.some((i) => i.request_id === defaultRequestId)
+      defaultRequestId && openItems.some((i) => i.request_id === defaultRequestId)
         ? defaultRequestId
-        : items[0].request_id
+        : openItems[0].request_id
     const current = form.getValues('supplement_request_id')
-    if (!current || !items.some((i) => i.request_id === current)) {
+    if (!current || !openItems.some((i) => i.request_id === current)) {
       form.setValue('supplement_request_id', preferred)
     }
-  }, [items, defaultRequestId, form])
+  }, [openItems, defaultRequestId, form])
 
-  if (items.length === 0) {
-    return (
-      <SectionCard title="補件回覆">
-        <p className="text-sm text-muted-foreground">
-          目前沒有可回覆的補件單；請待機關發出補件通知後再送出回覆。
-        </p>
-      </SectionCard>
-    )
+  /** 尚有待回覆補件才顯示表單；全部完成後不占版面 */
+  if (openItems.length === 0) {
+    return null
   }
+
+  const selectOptions = openItems.map((it) => ({
+    value: it.request_id,
+    label: it.title,
+  }))
 
   return (
     <SectionCard title="補件回覆">
@@ -91,8 +83,13 @@ export function SupplementResponseForm({
                 ...(note ? { note } : {}),
               },
               {
-                onSuccess: () => {
-                  toast.success('已送出補件回覆')
+                onSuccess: (data) => {
+                  const nextStatus = data.status
+                  if (nextStatus === 'resubmitted') {
+                    toast.success('已送出。案件已重新進入審查，請等候處理。')
+                  } else {
+                    toast.success('已送出本案補件；仍有其他待完成的補件時，請繼續回覆。')
+                  }
                   navigate(routePaths.applicantApplication(applicationId))
                 },
                 onError: (e) => toast.error(getErrorMessage(e)),
@@ -103,7 +100,7 @@ export function SupplementResponseForm({
           <FormField<SupplementResponseValues>
             name="supplement_request_id"
             label="要回覆的補件"
-            description="請依補件說明選擇對應通知（無需自行輸入 ID）。"
+            description="僅列出尚未完成的補件；完成全部後將重新送出審查。"
             required
             children={(field) => (
               <Select
@@ -118,6 +115,16 @@ export function SupplementResponseForm({
               />
             )}
           />
+          {selected ? (
+            <div className="border-border mt-3 rounded-md border bg-muted/30 px-3 py-3 text-sm">
+              <p className="text-muted-foreground text-xs font-medium">補件說明</p>
+              {selected.description ? (
+                <p className="mt-2 whitespace-pre-wrap text-foreground">{selected.description}</p>
+              ) : (
+                <p className="text-muted-foreground mt-2">（此補件未附說明正文）</p>
+              )}
+            </div>
+          ) : null}
           <FormField<SupplementResponseValues>
             name="note"
             label="說明（選填）"

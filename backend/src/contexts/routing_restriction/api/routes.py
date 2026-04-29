@@ -28,6 +28,7 @@ from src.contexts.routing_restriction.app.dtos import (
     MapLayerListItemDTO,
     OfficerOverrideInputDTO,
     PatchRestrictionRuleInputDTO,
+    PatchSelectedItineraryInputDTO,
     RequestKmlImportInputDTO,
     RestrictionRuleDetailDTO,
     RestrictionRuleListItemDTO,
@@ -103,6 +104,15 @@ def _core_officer_override(
     officer_user_id: UUID,
 ) -> RoutePlanDetailDTO:
     return svc.officer_override_route(application_id, body, officer_user_id=officer_user_id)
+
+
+@handle_api_errors
+def _core_patch_selected_itinerary(
+    svc: RoutingApplicationService,
+    application_id: UUID,
+    body: PatchSelectedItineraryInputDTO,
+) -> RoutePlanDetailDTO:
+    return svc.patch_selected_itinerary(application_id, body)
 
 
 @handle_api_errors
@@ -333,6 +343,38 @@ routing_review_router = APIRouter(
 
 
 @routing_review_router.get(
+    "/{application_id}/route-preview",
+    summary="路線申請狀態（起迄文字）",
+    description="尚未產出 route-plan 時，仍可查最新路線申請之狀態與起迄點描述（UC-ROUTE-01 讀視圖）；尚無申請時回 200 且 data 為 null。",
+    responses=combine_responses(
+        success_response(
+            RouteRequestStatusDTO(
+                route_request_id=_EX_RR,
+                application_id=_EX_APP,
+                status="planning_queued",
+                origin_text="範例起點",
+                destination_text="範例終點",
+            ).model_dump(mode="json"),
+            "成功",
+        ),
+    ),
+)
+async def get_route_preview_review(
+    request: Request,
+    application_id: UUID = Path(..., description="案件 UUID（規格：applicationId）"),
+    svc: RoutingApplicationService = Depends(get_routing_application_service),
+):
+    try:
+        logger.api_info("GET", request.url.path, application_id=str(application_id))
+        out = _core_get_route_preview(svc, application_id)
+        if out is None:
+            return routing_api_response(None, request)
+        return routing_api_response(out, request)
+    except Exception as e:
+        return routing_api_response(e, request)
+
+
+@routing_review_router.get(
     "/{application_id}/route-plan",
     summary="取得路線規劃詳情",
     description="UC-ROUTE-03：最新 route plan 讀模型；尚無規劃時回 200 且 data 為 null（承辦可改按「重新規劃」）。",
@@ -400,6 +442,44 @@ async def post_select_candidate(
     try:
         logger.api_info("POST", request.url.path, application_id=str(application_id))
         out = _core_select_candidate(svc, application_id, body)
+        return routing_api_response(out, request)
+    except Exception as e:
+        return routing_api_response(e, request)
+
+
+@routing_review_router.post(
+    "/{application_id}/route-plan/patch-itinerary",
+    summary="調整已選路線之分段",
+    description="依已選候選改寫路段路名／距離／時間（可增刪分段數），並依新路徑重算規則命中。需已先選定候選。",
+    responses=combine_responses(
+        success_response(
+            RoutePlanDetailDTO(
+                route_plan_id=_EX_RP,
+                application_id=_EX_APP,
+                route_request_id=_EX_RR,
+                status="candidate_selected",
+                planning_version="plan-example",
+                map_version="2026.1",
+                selected_candidate_id=_EX_CAND,
+                candidates=[],
+                no_route=None,
+            ).model_dump(mode="json"),
+            "成功",
+        ),
+        error_response(400, "RoutingValidationAppError", "Invalid", "輸入無效"),
+        error_response(404, "RoutingNotFoundAppError", "Not found", "找不到計畫或請求"),
+        error_response(409, "RoutingConflictAppError", "Conflict", "尚未選定候選"),
+    ),
+)
+async def post_patch_selected_itinerary(
+    request: Request,
+    application_id: UUID = Path(..., description="案件 UUID（規格：applicationId）"),
+    body: PatchSelectedItineraryInputDTO = Body(...),
+    svc: RoutingApplicationService = Depends(get_routing_application_service),
+):
+    try:
+        logger.api_info("POST", request.url.path, application_id=str(application_id))
+        out = _core_patch_selected_itinerary(svc, application_id, body)
         return routing_api_response(out, request)
     except Exception as e:
         return routing_api_response(e, request)

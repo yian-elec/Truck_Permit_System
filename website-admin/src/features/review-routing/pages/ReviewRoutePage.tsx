@@ -6,19 +6,21 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { routePaths } from '@/shared/constants/route-paths'
 import { ApiError } from '@/shared/api/api-error'
-import { Button, SectionCard } from '@/shared/ui'
+import { Button, InfoRow, SectionCard } from '@/shared/ui'
 
 import {
   getRoutePlan,
+  getRouteRequestPreview,
   getRuleHits,
   replanRoute,
   selectCandidate,
 } from '../api/route-api'
 import { CandidateList } from '../components/CandidateList'
-import { OverrideRouteDialog } from '../components/OverrideRouteDialog'
+import { SelectedRouteEditDialog } from '../components/SelectedRouteEditDialog'
 import { RoutePlanPanel } from '../components/RoutePlanPanel'
 import { RuleHitsPanel } from '../components/RuleHitsPanel'
 import { SelectedRouteItinerary } from '../components/SelectedRouteItinerary'
+import { readOptStr } from '../utils/route-plan-fields'
 
 /** 後端 UC-ROUTE-02 失敗時多為 404 + RoutingNotFoundAppError（LookupError 映射）。 */
 function formatReplanFailureMessage(error: unknown): string {
@@ -41,11 +43,17 @@ function formatReplanFailureMessage(error: unknown): string {
 export function ReviewRoutePage() {
   const { applicationId = '' } = useParams<{ applicationId: string }>()
   const queryClient = useQueryClient()
-  const [ovOpen, setOvOpen] = useState(false)
+  const [editRouteOpen, setEditRouteOpen] = useState(false)
 
   const planQuery = useQuery({
     queryKey: queryKeys.review.routePlan(applicationId),
     queryFn: () => getRoutePlan(applicationId),
+    enabled: Boolean(applicationId),
+  })
+
+  const previewQuery = useQuery({
+    queryKey: queryKeys.review.routePreview(applicationId),
+    queryFn: () => getRouteRequestPreview(applicationId),
     enabled: Boolean(applicationId),
   })
 
@@ -69,12 +77,13 @@ export function ReviewRoutePage() {
     onSuccess: async () => {
       toast.success('已執行自動規劃')
       await queryClient.invalidateQueries({ queryKey: queryKeys.review.routePlan(applicationId) })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.review.routePreview(applicationId) })
       await queryClient.invalidateQueries({ queryKey: queryKeys.review.ruleHits(applicationId) })
     },
     onError: (e) => toast.error(formatReplanFailureMessage(e)),
   })
 
-  const plan = planQuery.data
+  const plan = planQuery.data as Record<string, unknown> | null | undefined
   const candidates = (plan?.candidates ?? []) as Record<string, unknown>[]
 
   if (planQuery.isLoading) return <p className="text-muted-foreground text-sm">載入路線…</p>
@@ -83,12 +92,33 @@ export function ReviewRoutePage() {
   }
 
   if (!plan) {
+    const pv = previewQuery.data
+    const originLabel = pv ? readOptStr(pv, 'origin_text') : undefined
+    const destLabel = pv ? readOptStr(pv, 'destination_text') : undefined
+
     return (
       <div className="space-y-6 pb-16">
         <SectionCard title="路線規劃">
-          <p className="text-muted-foreground text-sm">
-            尚無路線資料。請確認申請人已儲存路線後，點選「執行自動規劃」以產生候選路線。
-          </p>
+          <div className="space-y-3">
+            {previewQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">讀取申請路線起迄…</p>
+            ) : pv ? (
+              <div className="border-border rounded-md border bg-muted/20 px-3 py-2">
+                <p className="text-muted-foreground mb-2 text-xs font-medium">申請路線起迄</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <InfoRow label="起始點">{originLabel ?? '—'}</InfoRow>
+                  <InfoRow label="到達點">{destLabel ?? '—'}</InfoRow>
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                尚無路線申請紀錄（申請人可能尚未於申請端儲存起迄點）。
+              </p>
+            )}
+            <p className="text-muted-foreground text-sm">
+              尚無自動規劃結果。請確認申請人已儲存路線後，點選「執行自動規劃」以產生候選路線。
+            </p>
+          </div>
         </SectionCard>
         <SectionCard title="規則命中">
           <p className="text-muted-foreground text-sm">尚無路線規劃時無規則命中資料。</p>
@@ -126,6 +156,8 @@ export function ReviewRoutePage() {
           mapVersion={String(plan.map_version ?? plan['map_version'] ?? '')}
           planningVersion={String(plan.planning_version ?? plan['planning_version'] ?? '')}
           selectedCandidateId={selectedId ?? undefined}
+          originText={readOptStr(plan, 'origin_text')}
+          destinationText={readOptStr(plan, 'destination_text')}
         />
       </SectionCard>
 
@@ -163,8 +195,13 @@ export function ReviewRoutePage() {
       </SectionCard>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={() => setOvOpen(true)}>
-          人工改線
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!selectedId}
+          onClick={() => setEditRouteOpen(true)}
+        >
+          調整已選路線
         </Button>
         <Button type="button" variant="secondary" loading={replanMut.isPending} onClick={() => replanMut.mutate()}>
           執行自動規劃
@@ -174,7 +211,13 @@ export function ReviewRoutePage() {
         </Button>
       </div>
 
-      <OverrideRouteDialog applicationId={applicationId} open={ovOpen} onOpenChange={setOvOpen} />
+      <SelectedRouteEditDialog
+        applicationId={applicationId}
+        open={editRouteOpen}
+        onOpenChange={setEditRouteOpen}
+        candidates={candidates}
+        selectedId={selectedId ?? undefined}
+      />
     </div>
   )
 }

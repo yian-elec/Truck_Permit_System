@@ -2,10 +2,10 @@
 SupplementRequest — 補件請求聚合根。
 
 責任：
-- 封裝 **review.supplement_requests** 與其 **review.supplement_items** 之領域生命週期：
+- 封裝 **review.supplement_requests**（必要時搭配 **review.supplement_items** 之舊資料）之領域生命週期：
   發出（OPEN）、完成（FULFILLED）、作廢（CANCELLED）。
-- 持有 **SupplementItem** 值物件集合（不可變 tuple）；UC-REV-03 由工廠 **issue** 建立。
-- **message** 對應 schema 之補件說明正文；**deadline_at** 可為 None（由產品決定是否必填）。
+- **items** 可為空（現行產品僅「標題 + 說明正文」）；UC-REV-03 由工廠 **issue** 建立。
+- **title**／**message**：對外短標題與詳細說明；**deadline_at** 可為 None。
 
 本聚合 **不** 直接修改 Application context 之狀態；僅表達補件領域事實，由 App 層呼叫
 Application 服務更新為 supplement_required。
@@ -35,8 +35,8 @@ class SupplementRequest:
     責任欄位：
     - **supplement_request_id**：主鍵。
     - **application_id**／**requested_by**：案件與發起承辦。
-    - **deadline_at**／**status**／**message**：期限、狀態、對外說明。
-    - **items**：補件項目列（值物件）；建立後以 tuple 固定，避免外部擅自 append。
+    - **deadline_at**／**status**／**title**／**message**：期限、狀態、短標題、對外說明。
+    - **items**：補件項目列（值物件，可為空）；建立後以 tuple 固定。
     """
 
     supplement_request_id: UUID
@@ -44,6 +44,7 @@ class SupplementRequest:
     requested_by: UUID
     deadline_at: datetime | None
     status: SupplementRequestStatus
+    title: str
     message: str
     items: tuple[SupplementItem, ...]
     created_at: datetime = field(default_factory=datetime.utcnow)
@@ -57,24 +58,27 @@ class SupplementRequest:
         application_id: UUID,
         requested_by: UUID,
         deadline_at: datetime | None,
+        title: str,
         message: str,
         items: tuple[SupplementItem, ...],
         now: datetime,
     ) -> SupplementRequest:
         """
-        UC-REV-03：發出補件（建立請求 + 項目快照）。
+        UC-REV-03：發出補件（標題 + 正文；項目列可為空）。
 
         責任：
-        - **items** 至少一筆。
-        - **message** 不可空白（補件說明必須存在，便於稽核與通知）。
+        - **title**／**message** 不可空白。
         """
+        ttl = (title or "").strip()
+        if not ttl:
+            raise ReviewInvalidValueError("supplement title must be non-empty")
+        if len(ttl) > 200:
+            raise ReviewInvalidValueError("supplement title exceeds max length")
         msg = (message or "").strip()
         if not msg:
             raise ReviewInvalidValueError("supplement message must be non-empty")
         if len(msg) > 20_000:
             raise ReviewInvalidValueError("supplement message exceeds max length")
-        if not items:
-            raise ReviewInvalidValueError("supplement request requires at least one item")
 
         return cls(
             supplement_request_id=supplement_request_id,
@@ -82,6 +86,7 @@ class SupplementRequest:
             requested_by=requested_by,
             deadline_at=deadline_at,
             status=SupplementRequestStatus.OPEN,
+            title=ttl,
             message=msg,
             items=tuple(items),
             created_at=now,

@@ -16,6 +16,7 @@ from src.contexts.routing_restriction.app.dtos import (
     MapLayerListItemDTO,
     OfficerOverrideInputDTO,
     PatchRestrictionRuleInputDTO,
+    PatchSelectedItineraryInputDTO,
     RequestKmlImportInputDTO,
     RestrictionRuleDetailDTO,
     RestrictionRuleListItemDTO,
@@ -141,6 +142,13 @@ class RoutingApplicationService:
             dto,
             officer_user_id=officer_user_id,
         )
+
+    def patch_selected_itinerary(
+        self,
+        application_id: UUID,
+        dto: PatchSelectedItineraryInputDTO,
+    ) -> RoutePlanDetailDTO:
+        return self.review.patch_selected_itinerary(application_id, dto)
 
     def review_replan(self, application_id: UUID) -> UUID:
         return self.review.replan(application_id)

@@ -24,29 +24,20 @@ type Props = {
   onOpenChange: (open: boolean) => void
 }
 
-type RouteBinding = 'candidate' | 'override'
-
-const selectClassName = cn(
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-  'disabled:cursor-not-allowed disabled:opacity-50',
-)
-
 function candidateLabel(c: Record<string, unknown>): string {
   const rank = c.candidate_rank ?? '?'
   const dist = c.distance_m ?? ''
   const dur = c.duration_s ?? ''
   const summary = String(c.summary_text ?? '').trim()
-  const sumShort = summary.length > 72 ? `${summary.slice(0, 69)}…` : summary
-  return `第 ${rank} 順位 · ${dist}m · ${dur}s${sumShort ? ` · ${sumShort}` : ''}`
+  const sumShort = summary.length > 160 ? `${summary.slice(0, 157)}…` : summary
+  return `第 ${rank} 順位 · ${dist} m · ${dur} s${sumShort ? ` — ${sumShort}` : ''}`
 }
 
-function overrideLabel(o: Record<string, unknown>): string {
-  const created = o.created_at ? String(o.created_at).replace('T', ' ').slice(0, 19) : ''
-  const reason = String(o.override_reason ?? '').trim()
-  const reasonShort = reason.length > 100 ? `${reason.slice(0, 97)}…` : reason
-  return `${created ? `${created} · ` : ''}${reasonShort || '人工改線'}`
-}
+/** 強化 datetime-local 右上角日曆圖示可點範圍，並避免父層裁切 stacking 導致點不到（含與對話框關閉鈕重疊） */
+const datetimeLocalInputClass =
+  'relative z-10 min-h-9 min-w-0 px-3 py-1 text-base sm:h-9 sm:text-sm [&:focus]:z-[11] [&:focus-visible]:z-[11] pr-14 ' +
+  '[&::-webkit-calendar-picker-indicator]:mt-[-2px] [&::-webkit-calendar-picker-indicator]:cursor-pointer ' +
+  '[&::-webkit-calendar-picker-indicator]:opacity-90 [&::-webkit-datetime-edit-text]:grow-0'
 
 export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
   const queryClient = useQueryClient()
@@ -54,9 +45,6 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
   const [reason, setReason] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
-  const [routeBinding, setRouteBinding] = useState<RouteBinding>('candidate')
-  const [selectedCandidateId, setSelectedCandidateId] = useState('')
-  const [selectedOverrideId, setSelectedOverrideId] = useState('')
 
   const planQuery = useQuery({
     queryKey: queryKeys.review.routePlan(applicationId),
@@ -64,66 +52,36 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
     enabled: open && Boolean(applicationId),
   })
 
-  const plan = planQuery.data
+  const plan = planQuery.data as Record<string, unknown> | null | undefined
   const candidates = (plan?.candidates ?? []) as Record<string, unknown>[]
-  const overrides = (plan?.officer_overrides ?? []) as Record<string, unknown>[]
+  const selectedRaw = plan?.selected_candidate_id ?? plan?.['selected_candidate_id']
+  const selectedId = selectedRaw != null && selectedRaw !== '' ? String(selectedRaw) : ''
+
+  const boundCandidate =
+    selectedId && candidates.length > 0
+      ? candidates.find((c) => String(c.candidate_id ?? '') === selectedId) ?? null
+      : null
 
   useEffect(() => {
-    if (!open) setConfirmStep(false)
+    if (!open) {
+      setConfirmStep(false)
+    }
   }, [open])
-
-  useEffect(() => {
-    if (!open || !plan) return
-    const candList = (plan.candidates ?? []) as Record<string, unknown>[]
-    const ovList = (plan.officer_overrides ?? plan['officer_overrides'] ?? []) as Record<string, unknown>[]
-    const sel = plan.selected_candidate_id ?? plan['selected_candidate_id']
-    const selStr = sel != null ? String(sel) : ''
-
-    if (candList.length > 0 && ovList.length === 0) {
-      setRouteBinding('candidate')
-    } else if (candList.length === 0 && ovList.length > 0) {
-      setRouteBinding('override')
-    } else if (selStr && candList.some((c) => String(c.candidate_id ?? '') === selStr)) {
-      setRouteBinding('candidate')
-    } else if (ovList.length > 0) {
-      setRouteBinding('override')
-    }
-
-    if (selStr && candList.some((c) => String(c.candidate_id ?? '') === selStr)) {
-      setSelectedCandidateId(selStr)
-    } else if (candList[0]?.candidate_id) {
-      setSelectedCandidateId(String(candList[0].candidate_id))
-    } else {
-      setSelectedCandidateId('')
-    }
-
-    const firstOv = ovList[0]?.override_id
-    setSelectedOverrideId(firstOv != null ? String(firstOv) : '')
-  }, [open, plan])
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (routeBinding === 'candidate') {
-        if (!selectedCandidateId) {
-          throw new Error('請選擇一筆候選路線')
-        }
-        return approveApplication(applicationId, {
-          reason,
-          approved_start_at: start ? new Date(start).toISOString() : null,
-          approved_end_at: end ? new Date(end).toISOString() : null,
-          selected_candidate_id: selectedCandidateId,
-          override_id: null,
-        })
+      if (!selectedId) {
+        throw new Error('請先在「路線審查」頁選定一條候選路線，再來核准。')
       }
-      if (!selectedOverrideId) {
-        throw new Error('請選擇一筆人工改線紀錄')
+      if (!boundCandidate) {
+        throw new Error('找不到已選定的候選路線，請重新整理或至路線審查確認。')
       }
       return approveApplication(applicationId, {
         reason,
         approved_start_at: start ? new Date(start).toISOString() : null,
         approved_end_at: end ? new Date(end).toISOString() : null,
-        selected_candidate_id: null,
-        override_id: selectedOverrideId,
+        selected_candidate_id: selectedId,
+        override_id: null,
       })
     },
     onSuccess: async () => {
@@ -138,29 +96,26 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
     onError: (e) => toast.error(e instanceof Error ? e.message : ApiError.fromUnknown(e).message),
   })
 
-  const candidateOptions = candidates
-    .filter((c) => c.candidate_id != null)
-    .map((c) => ({
-      value: String(c.candidate_id),
-      label: candidateLabel(c),
-    }))
-
-  const overrideOptions = overrides
-    .filter((o) => o.override_id != null)
-    .map((o) => ({
-      value: String(o.override_id),
-      label: overrideLabel(o),
-    }))
+  const canProceed =
+    Boolean(planQuery.data) &&
+    !planQuery.isLoading &&
+    !planQuery.isError &&
+    Boolean(selectedId) &&
+    Boolean(boundCandidate)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      {/*
+        外層避免 overflow:hidden 裁切瀏覽器內建的 datetime picker。
+        Radix Dialog 關閉鈕在右上角：日期列右側多留空白，並用 z-[1]／input 強化 layering，避免遮擋可點區。
+      */}
+      <DialogContent className="gap-4 overflow-visible p-6">
+        <DialogHeader className="shrink-0 pr-8">
           <DialogTitle>核准</DialogTitle>
           <DialogDescription>
             {confirmStep
               ? '請再次確認。核准後系統會通知申請人，案件狀態將變為「已核准」。'
-              : '填寫核准內容與路線綁定，再進入確認步驟。'}
+              : '填寫核准內容並確認時間區間（路線採你在路線審查選定的那一條），再進入確認步驟。'}
           </DialogDescription>
         </DialogHeader>
         {confirmStep ? (
@@ -172,7 +127,12 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setConfirmStep(false)} disabled={mutation.isPending}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmStep(false)}
+                disabled={mutation.isPending}
+              >
                 取消
               </Button>
               <Button type="button" loading={mutation.isPending} onClick={() => mutation.mutate()}>
@@ -181,7 +141,7 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="max-h-[min(70vh,calc(100vh-12rem))] space-y-3 overflow-x-visible overflow-y-auto pr-3">
             <div>
               <label className="text-muted-foreground text-xs font-medium">理由</label>
               <textarea
@@ -190,14 +150,25 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
                 onChange={(e) => setReason(e.target.value)}
               />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
+
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <div className="min-w-0">
                 <label className="text-muted-foreground text-xs font-medium">核准起</label>
-                <Input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+                <Input
+                  type="datetime-local"
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                  className={cn(datetimeLocalInputClass, 'mt-1 block w-full')}
+                />
               </div>
-              <div>
+              <div className="min-w-0 sm:pr-2">
                 <label className="text-muted-foreground text-xs font-medium">核准迄</label>
-                <Input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+                <Input
+                  type="datetime-local"
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                  className={cn(datetimeLocalInputClass, 'mt-1 block w-full')}
+                />
               </div>
             </div>
 
@@ -206,91 +177,25 @@ export function ApproveDialog({ applicationId, open, onOpenChange }: Props) {
             ) : planQuery.isError ? (
               <p className="text-destructive text-sm">無法載入路線規劃，請稍後再試或至路線審查頁確認。</p>
             ) : !plan ? (
-              <p className="text-muted-foreground text-sm">尚無路線規劃資料；若需綁定路線請先執行規劃或人工改線。</p>
+              <p className="text-muted-foreground text-sm">
+                尚無路線規劃資料；若需核准請先執行自動規劃，並於路線審查選定候選路線。
+              </p>
+            ) : !selectedId || !boundCandidate ? (
+              <p className="text-destructive text-sm">
+                尚未綁定路線：請先至「路線審查」於候選路線中按「選定此路線」，再回來核准。
+              </p>
             ) : (
-              <>
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">核准綁定路線</span>
-                  <p className="text-muted-foreground text-xs">
-                    請擇一：以自動規劃候選為準，或以人工改線紀錄為準（不可同時指定兩者）。
-                  </p>
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        className="h-4 w-4"
-                        checked={routeBinding === 'candidate'}
-                        disabled={candidateOptions.length === 0}
-                        onChange={() => setRouteBinding('candidate')}
-                      />
-                      使用候選路線
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        className="h-4 w-4"
-                        checked={routeBinding === 'override'}
-                        disabled={overrideOptions.length === 0}
-                        onChange={() => setRouteBinding('override')}
-                      />
-                      使用人工改線
-                    </label>
-                  </div>
-                </div>
-
-                {routeBinding === 'candidate' ? (
-                  <div>
-                    <label className="text-muted-foreground text-xs font-medium">候選路線</label>
-                    {candidateOptions.length === 0 ? (
-                      <p className="text-muted-foreground mt-1 text-sm">目前無候選路線可選。</p>
-                    ) : (
-                      <select
-                        className={cn(selectClassName, 'mt-1')}
-                        value={selectedCandidateId}
-                        onChange={(e) => setSelectedCandidateId(e.target.value)}
-                      >
-                        <option value="" disabled>
-                          請選擇候選路線
-                        </option>
-                        {candidateOptions.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <label className="text-muted-foreground text-xs font-medium">人工改線紀錄</label>
-                    {overrideOptions.length === 0 ? (
-                      <p className="text-muted-foreground mt-1 text-sm">尚無人工改線紀錄；請先於路線審查執行「人工改線」。</p>
-                    ) : (
-                      <select
-                        className={cn(selectClassName, 'mt-1')}
-                        value={selectedOverrideId}
-                        onChange={(e) => setSelectedOverrideId(e.target.value)}
-                      >
-                        <option value="" disabled>
-                          請選擇改線紀錄
-                        </option>
-                        {overrideOptions.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )}
-              </>
+              <div className="bg-muted/30 border-border rounded-md border px-3 py-2 text-sm">
+                <p className="text-muted-foreground text-xs font-medium">核准綁定路線（已選定）</p>
+                <p className="text-foreground mt-1 break-words">{candidateLabel(boundCandidate)}</p>
+              </div>
             )}
 
             <Button
               type="button"
               className="w-full"
               onClick={() => setConfirmStep(true)}
-              disabled={planQuery.isLoading}
+              disabled={planQuery.isLoading || !canProceed}
             >
               下一步：確認核准
             </Button>

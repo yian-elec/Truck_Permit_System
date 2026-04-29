@@ -13,7 +13,6 @@ from .review_command_dtos import (
     RejectApplicationOutputDTO,
     RequestSupplementInputDTO,
     RequestSupplementOutputDTO,
-    SupplementItemInputDTO,
 )
 from .review_query_dtos import (
     AuditTrailEntryDTO,
@@ -50,7 +49,6 @@ __all__ = [
     "ReviewOcrSummaryDTO",
     "AuditTrailEntryDTO",
     # command
-    "SupplementItemInputDTO",
     "RequestSupplementInputDTO",
     "RequestSupplementOutputDTO",
     "ApproveApplicationInputDTO",

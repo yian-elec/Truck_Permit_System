@@ -10,6 +10,8 @@ const STATUS_PRETTY: Record<string, string> = {
   pending_assignment: '等待分派',
   in_review: '審核中',
   open: '待處理',
+  supplement_required: '待補件',
+  resubmitted: '補件後已再送',
   submitted: '已送出',
   closed: '已結案',
   succeeded: '已完成',
@@ -36,6 +38,16 @@ export function formatOperatorStatus(status: string): string {
   if (!status) return '—'
   const k = status.toLowerCase().replace(/\s+/g, '_')
   return STATUS_PRETTY[k] ?? status
+}
+
+/** 已作出終局處分或結案：不應再顯示核准／駁回／補件。 */
+export function isTerminalApplicationStatus(status: unknown): boolean {
+  const s = String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+  if (!s) return false
+  return ['rejected', 'approved', 'closed', 'cancelled'].includes(s)
 }
 
 export function formatOperatorStage(stage: string): string {

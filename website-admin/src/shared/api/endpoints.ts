@@ -22,11 +22,14 @@ export const endpoints = {
     supplement: (applicationId: string) => `${v1}/review/applications/${applicationId}/supplement`,
     approve: (applicationId: string) => `${v1}/review/applications/${applicationId}/approve`,
     reject: (applicationId: string) => `${v1}/review/applications/${applicationId}/reject`,
+    routePreview: (applicationId: string) => `${v1}/review/applications/${applicationId}/route-preview`,
     routePlan: (applicationId: string) => `${v1}/review/applications/${applicationId}/route-plan`,
     routePlanRuleHits: (applicationId: string) =>
       `${v1}/review/applications/${applicationId}/route-plan/rule-hits`,
     routePlanSelectCandidate: (applicationId: string) =>
       `${v1}/review/applications/${applicationId}/route-plan/select-candidate`,
+    routePlanPatchItinerary: (applicationId: string) =>
+      `${v1}/review/applications/${applicationId}/route-plan/patch-itinerary`,
     routePlanOverride: (applicationId: string) =>
       `${v1}/review/applications/${applicationId}/route-plan/override`,
     routePlanReplan: (applicationId: string) =>

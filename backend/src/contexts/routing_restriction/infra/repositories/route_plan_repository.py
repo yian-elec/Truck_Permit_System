@@ -6,12 +6,13 @@ RoutePlanRepository — routing.route_plans 及其候選、路段、規則命中
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text, update
 
 from shared.core.db.connection import get_session
 
@@ -282,3 +283,126 @@ class RoutePlanRepository:
                 plan.no_route_explanation.message if plan.no_route_explanation else None
             )
             row.updated_at = plan.updated_at
+
+    def patch_selected_candidate_itinerary(
+        self,
+        application_id: UUID,
+        segments_in: list[Tuple[Optional[str], int, int]],
+    ) -> None:
+        """
+        取代「目前已選」候選之路段資料：依各段 distance_m 佔總長比例，
+        對該候選既有 LINESTRING 做 ST_LineSubstring 切段。
+
+        **不**變更 route_candidates.geom（維持原完整路徑）；僅更新 distance_m、duration_s、summary_text。
+        """
+        if not segments_in:
+            raise ValueError("segments_in must not be empty")
+        total_w = float(sum(d for _, d, _ in segments_in))
+        if total_w <= 0:
+            raise ValueError("total distance must be positive")
+
+        now = datetime.now(timezone.utc)
+        fracs: list[float] = [0.0]
+        acc = 0.0
+        for _, d_m, _ in segments_in:
+            acc += float(d_m) / total_w
+            fracs.append(min(1.0, acc))
+        fracs[-1] = 1.0
+
+        with get_session() as session:
+            row = session.scalars(
+                select(RoutePlans)
+                .where(RoutePlans.application_id == application_id)
+                .order_by(RoutePlans.created_at.desc())
+                .limit(1)
+            ).first()
+            if row is None:
+                raise LookupError("route_plan not found")
+            cid = row.selected_candidate_id
+            if cid is None:
+                raise LookupError("no selected candidate on latest route plan")
+
+            line_wkt = session.execute(
+                text("SELECT ST_AsText(geom) FROM routing.route_candidates WHERE candidate_id = :cid"),
+                {"cid": cid},
+            ).scalar()
+            if not line_wkt:
+                raise LookupError("candidate geometry not found")
+
+            session.execute(delete(RouteRuleHits).where(RouteRuleHits.candidate_id == cid))
+            session.execute(delete(RouteSegments).where(RouteSegments.candidate_id == cid))
+            session.flush()
+
+            total_dist = 0
+            total_dur = 0
+            names_for_summary: list[str] = []
+            for idx, (road_name_raw, d_m, dur_s) in enumerate(segments_in):
+                total_dist += int(d_m)
+                total_dur += int(dur_s)
+                nm = (road_name_raw or "").strip() or "未命名道路"
+                names_for_summary.append(nm)
+                a = fracs[idx]
+                b = fracs[idx + 1]
+                if b <= a:
+                    b = min(1.0, a + 1e-9)
+                seg_wkt = session.execute(
+                    text(
+                        "SELECT ST_AsText(ST_LineSubstring(ST_GeomFromText(:wkt, 4326), :a, :b))"
+                    ),
+                    {"wkt": line_wkt, "a": a, "b": b},
+                ).scalar()
+                if not seg_wkt:
+                    raise ValueError("ST_LineSubstring returned empty")
+                seg_id = uuid4()
+                rn = (road_name_raw or "").strip() or None
+                rs = RouteSegments(
+                    segment_id=seg_id,
+                    candidate_id=cid,
+                    seq_no=idx,
+                    road_name=rn,
+                    distance_m=int(d_m),
+                    duration_s=int(dur_s),
+                    geom=WKTElement(seg_wkt, srid=4326),
+                    instruction_text=None,
+                    is_exception_road=False,
+                    created_at=now,
+                )
+                session.add(rs)
+
+            summary = " → ".join(names_for_summary)
+            session.execute(
+                update(RouteCandidates)
+                .where(RouteCandidates.candidate_id == cid)
+                .values(
+                    distance_m=max(1, total_dist),
+                    duration_s=max(1, total_dur),
+                    summary_text=summary,
+                )
+            )
+            session.execute(
+                update(RoutePlans)
+                .where(RoutePlans.route_plan_id == row.route_plan_id)
+                .values(updated_at=now)
+            )
+
+    def replace_rule_hits_for_candidate(self, candidate_with_hits: RouteCandidate) -> None:
+        """以領域候選中的 rule_hits 覆寫 DB（先刪後插）。"""
+        cid = candidate_with_hits.candidate_id
+        segs = candidate_with_hits.segments
+        hits = candidate_with_hits.rule_hits
+        with get_session() as session:
+            session.execute(delete(RouteRuleHits).where(RouteRuleHits.candidate_id == cid))
+            for h in hits:
+                seg_uuid: Optional[UUID] = None
+                if h.segment_index is not None and segs and 0 <= h.segment_index < len(segs):
+                    seg_uuid = segs[h.segment_index].segment_id
+                session.add(
+                    RouteRuleHits(
+                        rule_hit_id=uuid4(),
+                        candidate_id=cid,
+                        rule_id=h.rule_id,
+                        hit_type=h.severity.value,
+                        segment_id=seg_uuid,
+                        detail_text=h.detail_text,
+                    )
+                )

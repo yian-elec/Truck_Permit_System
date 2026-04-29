@@ -65,7 +65,10 @@ class SupplementRequestSummaryDTO(BaseModel):
     requested_by: UUID
     deadline_at: datetime | None
     status: str
+    title: str
     message: str
+    applicant_response_note: str | None = None
+    responded_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     items: list[SupplementItemSummaryDTO] = Field(default_factory=list)

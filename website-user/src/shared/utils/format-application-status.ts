@@ -5,7 +5,7 @@ const labels: Record<string, string> = {
   approved: '核准',
   rejected: '駁回',
   supplement_required: '補件中',
-  resubmitted: '已補件送出',
+  resubmitted: '等待處理',
   cancelled: '已取消',
   withdrawn: '已撤回',
 }

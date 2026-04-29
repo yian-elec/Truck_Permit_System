@@ -4,7 +4,11 @@ import { endpoints } from '@/shared/api/endpoints'
 import { post } from '@/shared/api/request'
 import { parseApiData } from '@/shared/api/response-parser'
 
-const schema = z.unknown()
+const dataSchema = z.object({
+  application_id: z.string(),
+  status: z.string(),
+  message: z.string().optional(),
+})
 
 export type SupplementResponseBody = {
   supplement_request_id: string
@@ -16,10 +20,12 @@ export type SupplementResponseBody = {
   }
 }
 
+export type SupplementResponsePayload = z.infer<typeof dataSchema>
+
 export async function postSupplementResponseApi(
   applicationId: string,
   body: SupplementResponseBody,
-): Promise<unknown> {
+): Promise<SupplementResponsePayload> {
   const { data } = await post<unknown>(endpoints.applicant.supplementResponse(applicationId), body)
-  return parseApiData(schema, data)
+  return parseApiData(dataSchema, data)
 }

@@ -7,11 +7,13 @@ UC-ROUTE-04、UC-ROUTE-05、承辦 replan：選定候選、人工改線、觸發
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from src.contexts.routing_restriction.app.dtos.route_plan_dtos import (
     OfficerOverrideInputDTO,
+    PatchSelectedItineraryInputDTO,
     RoutePlanDetailDTO,
     SelectCandidateInputDTO,
 )
@@ -31,6 +33,12 @@ from src.contexts.routing_restriction.infra.repositories.officer_route_override_
 from src.contexts.routing_restriction.infra.repositories.route_plan_repository import (
     RoutePlanRepository,
 )
+from src.contexts.routing_restriction.infra.repositories.route_request_repository import (
+    RouteRequestRepository,
+)
+from src.contexts.routing_restriction.infra.spatial.postgis_spatial_rule_hit_port import (
+    PostgisSpatialRuleHitPort,
+)
 from src.contexts.routing_restriction.infra.repositories.geometry_wkt import (
     parse_linestring_wkt,
 )
@@ -49,12 +57,14 @@ class RoutePlanReviewApplicationService:
         route_plans: RoutePlanRepository | None = None,
         overrides: OfficerRouteOverrideRepository | None = None,
         planning: RoutePlanningApplicationService | None = None,
+        route_requests: RouteRequestRepository | None = None,
     ) -> None:
         self._plans = route_plans or RoutePlanRepository()
         self._overrides = overrides or OfficerRouteOverrideRepository()
         self._planning = planning or RoutePlanningApplicationService(
             route_plans=self._plans,
         )
+        self._route_requests = route_requests or RouteRequestRepository()
 
     def select_candidate(
         self,
@@ -72,6 +82,49 @@ class RoutePlanReviewApplicationService:
             plan.select_candidate(dto.candidate_id, now=now)
             self._plans.update_plan_header(plan)
             return _plan_to_detail_dto(plan)
+        except Exception as exc:
+            raise to_routing_app_error(exc) from exc
+
+    def patch_selected_itinerary(
+        self,
+        application_id: UUID,
+        dto: PatchSelectedItineraryInputDTO,
+    ) -> RoutePlanDetailDTO:
+        """
+        覆寫目前已選候選之分段（路名／距離／時間），並依新路徑重算規則命中。
+        """
+        rows = [(s.road_name, s.distance_m, s.duration_s) for s in dto.segments]
+        try:
+            self._plans.patch_selected_candidate_itinerary(application_id, rows)
+            plan = self._plans.find_latest_by_application_id(application_id)
+            if plan is None:
+                raise LookupError("route_plan not found")
+            sel = plan.selected_candidate_id
+            if sel is None:
+                raise RoutingConflictAppError("尚未選定候選路線，無法調整行程")
+            cand = next((c for c in plan.candidates if c.candidate_id == sel), None)
+            if cand is None:
+                raise LookupError("selected candidate not found on plan")
+
+            req = self._route_requests.find_latest_by_application_id(application_id)
+            if req is None:
+                raise LookupError("route_request not found")
+
+            c_cleared = replace(cand, rule_hits=[])
+            spatial = PostgisSpatialRuleHitPort()
+            merged = spatial.attach_rule_hits(
+                [c_cleared],
+                vehicle=req.vehicle_profile,
+                departure_at=req.requested_departure_at,
+            )
+            if not merged:
+                raise LookupError("attach_rule_hits returned empty")
+            self._plans.replace_rule_hits_for_candidate(merged[0])
+
+            plan_out = self._plans.find_latest_by_application_id(application_id)
+            if plan_out is None:
+                raise LookupError("route_plan not found after patch")
+            return _plan_to_detail_dto(plan_out)
         except Exception as exc:
             raise to_routing_app_error(exc) from exc
 

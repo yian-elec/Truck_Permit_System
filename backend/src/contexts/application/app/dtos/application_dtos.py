@@ -199,6 +199,7 @@ class SupplementRequestItemDTO(BaseModel):
     request_id: UUID
     title: str
     description: str | None = None
+    status: str
     created_at: datetime
 
 

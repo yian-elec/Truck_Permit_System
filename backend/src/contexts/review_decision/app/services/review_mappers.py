@@ -78,6 +78,7 @@ def domain_supplement_request_to_orm(sr: SupplementRequest) -> SupplementRequest
         requested_by=sr.requested_by,
         deadline_at=sr.deadline_at,
         status=sr.status.value,
+        title=sr.title,
         message=sr.message,
         created_at=sr.created_at,
         updated_at=sr.updated_at,

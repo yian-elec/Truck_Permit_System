@@ -10,6 +10,7 @@ export const queryKeys = {
     pageModel: (id: string) => ['review', 'page-model', id] as const,
     comments: (id: string) => ['review', 'comments', id] as const,
     ocrSummary: (id: string) => ['review', 'ocr-summary', id] as const,
+    routePreview: (id: string) => ['review', 'route-preview', id] as const,
     routePlan: (id: string) => ['review', 'route-plan', id] as const,
     ruleHits: (id: string) => ['review', 'rule-hits', id] as const,
     decisions: (id: string) => ['review', 'decisions', id] as const,

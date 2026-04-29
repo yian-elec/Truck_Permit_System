@@ -70,6 +70,11 @@ class Settings(BaseSettings):
         env="OVERPASS_URL",
     )
     overpass_timeout_s: float = Field(default=60.0, env="OVERPASS_TIMEOUT_S")
+    # overpass-api.de 要求可識別之 User-Agent（非瀏覽器預設/httpx 預設可導致 HTTP 406）；上線請改為含聯絡資訊之字串
+    overpass_user_agent: str = Field(
+        default="TruckPermitRouting/1.0 (heavy truck permit; MVP route planning)",
+        env="OVERPASS_USER_AGENT",
+    )
 
     # 道路資料層：Overpass bbox 緩衝（度）、query 簽章版本、路名 fallback
     road_fetch_bbox_pad_deg: float = Field(default=0.02, env="ROAD_FETCH_BBOX_PAD_DEG")

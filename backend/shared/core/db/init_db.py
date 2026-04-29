@@ -249,6 +249,31 @@ class DatabaseInitializer:
                         )
                     )
 
+            # create_all 不會為既有表補新欄位：review.supplement_requests.title
+            if self.engine.dialect.name == "postgresql":
+                with self.engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            """
+                            DO $review_supplement_patch$
+                            BEGIN
+                              IF EXISTS (
+                                SELECT 1 FROM information_schema.tables
+                                WHERE table_schema = 'review' AND table_name = 'supplement_requests'
+                              ) THEN
+                                ALTER TABLE review.supplement_requests
+                                  ADD COLUMN IF NOT EXISTS title VARCHAR(200) NOT NULL DEFAULT '';
+                                ALTER TABLE review.supplement_requests
+                                  ADD COLUMN IF NOT EXISTS applicant_response_note TEXT;
+                                ALTER TABLE review.supplement_requests
+                                  ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ;
+                              END IF;
+                            END
+                            $review_supplement_patch$;
+                            """
+                        )
+                    )
+
             logger.db_info("All tables created successfully")
             
         except Exception as e:

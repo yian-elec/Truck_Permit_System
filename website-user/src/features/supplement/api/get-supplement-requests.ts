@@ -9,6 +9,7 @@ const supplementItemSchema = z
     request_id: z.string(),
     title: z.string(),
     description: z.string().nullish(),
+    status: z.string().optional(),
     created_at: z.string(),
   })
   .passthrough()

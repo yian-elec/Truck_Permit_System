@@ -34,11 +34,13 @@ def supplement_notification_payload(
     *,
     application_id: UUID,
     supplement_request_id: UUID,
+    title: str,
     message: str,
 ) -> dict[str, Any]:
     """組補件通知之建議 payload 結構。"""
     return {
         "application_id": str(application_id),
         "supplement_request_id": str(supplement_request_id),
+        "title": title,
         "message": message,
     }

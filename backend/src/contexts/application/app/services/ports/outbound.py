@@ -2,11 +2,12 @@
 Application App 層對外埠（檔案儲存、事件發布、補件協作）。
 
 責任：隸屬於 `services` 套件，避免在 `app` 根目錄另立與 dtos／errors 同級之目錄；
-以 Protocol／具象類別描述 Infra 須實作之能力；預設提供空實作供開發與單元測試。
+以 Protocol／具象類別描述 Infra 須實作之能力；預設提供空實作供開發與本地開發。
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -51,6 +52,23 @@ class SupplementWorkflowPort(Protocol):
         """若不滿足補件條件，應拋出例外。"""
         ...
 
+    def record_applicant_supplement_reply(
+        self,
+        application_id: UUID,
+        supplement_request_id: UUID,
+        *,
+        applicant_note: str | None,
+        now: datetime,
+    ) -> None:
+        """
+        將指定之 OPEN 補件單標記為 fulfilled 並寫入申請人備註。
+
+        無法更新（ID 錯誤或已非 open）時應拋 ApplicationValidationAppError。
+        """
+
+    def count_open_supplement_requests(self, application_id: UUID) -> int:
+        """本案仍為 open 之補件筆數（用於判斷是否須轉 resubmitted）。"""
+
     def list_supplement_notifications(
         self,
         application_id: UUID,
@@ -85,10 +103,24 @@ class NoopApplicationEventPublisher:
 
 
 class NoopSupplementWorkflowPort:
-    """未接審查服務時一律允許完成補件回覆（僅限開發）。"""
+    """未接審查服務：不寫入 review，回覆一律視為通過；未完成筆數視為 0 以維持既存單元測試行為。"""
 
     def assert_may_finalize_supplement_response(self, application_id: UUID) -> None:
         _ = application_id
+
+    def record_applicant_supplement_reply(
+        self,
+        application_id: UUID,
+        supplement_request_id: UUID,
+        *,
+        applicant_note: str | None,
+        now: datetime,
+    ) -> None:
+        _ = (application_id, supplement_request_id, applicant_note, now)
+
+    def count_open_supplement_requests(self, application_id: UUID) -> int:
+        _ = application_id
+        return 0
 
     def list_supplement_notifications(
         self,
