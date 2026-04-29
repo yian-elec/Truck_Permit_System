@@ -62,10 +62,16 @@ export function buildPatchApplicationBody(
   if (rd) patch.reason_detail = rd
 
   const start = core.requested_start_at?.trim()
-  if (start) patch.requested_start_at = start
+  if (start) {
+    const startDate = new Date(start)
+    patch.requested_start_at = Number.isNaN(startDate.getTime()) ? start : startDate.toISOString()
+  }
 
   const end = core.requested_end_at?.trim()
-  if (end) patch.requested_end_at = end
+  if (end) {
+    const endDate = new Date(end)
+    patch.requested_end_at = Number.isNaN(endDate.getTime()) ? end : endDate.toISOString()
+  }
 
   const delivery = core.delivery_method?.trim()
   if (delivery) patch.delivery_method = delivery

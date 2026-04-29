@@ -98,12 +98,12 @@ export function ApplicationPreviewPage() {
             <dd>{d.reason_detail?.trim() || '—'}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">許可期間起</dt>
-            <dd>{formatDate(d.requested_start_at)}</dd>
+            <dt className="text-muted-foreground">許可起始日期</dt>
+            <dd>{formatDate(d.requested_start_at, 'zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">許可期間迄</dt>
-            <dd>{formatDate(d.requested_end_at)}</dd>
+            <dt className="text-muted-foreground">許可結束日期</dt>
+            <dd>{formatDate(d.requested_end_at, 'zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</dd>
           </div>
         </dl>
         </SectionCard>

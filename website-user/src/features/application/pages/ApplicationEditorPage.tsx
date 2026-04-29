@@ -56,6 +56,22 @@ import {
   type CompanyProfileFormValues,
 } from '../validators/profile-form.schema'
 
+
+function isoToLocalDatetime(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  // datetime-local 需要 "YYYY-MM-DDTHH:mm" 格式（local time）
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function localDatetimeToIso(local: string): string {
+  const d = new Date(local)
+  if (Number.isNaN(d.getTime())) return local
+  return d.toISOString()
+}
+
 export function ApplicationEditorPage() {
   const { applicationId = '' } = useParams()
   usePageTitle(`編輯案件 ${applicationId}`)
@@ -89,8 +105,8 @@ export function ApplicationEditorPage() {
       ? {
           reason_type: detail.data.reason_type ?? '',
           reason_detail: detail.data.reason_detail ?? '',
-          requested_start_at: detail.data.requested_start_at ?? '',
-          requested_end_at: detail.data.requested_end_at ?? '',
+          requested_start_at: isoToLocalDatetime(detail.data.requested_start_at ?? ''),
+          requested_end_at: isoToLocalDatetime(detail.data.requested_end_at ?? ''),
           delivery_method: normalizeDeliveryMethodCode(detail.data.delivery_method),
         }
       : {
@@ -277,27 +293,29 @@ export function ApplicationEditorPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField<ApplicationCoreValues>
                   name="requested_start_at"
-                  label="許可起始（ISO 日期時間）"
+                  label="許可起始日期"
                   children={(field) => (
                     <Input
+                      type="datetime-local"
                       name={field.name}
                       ref={field.ref as React.Ref<HTMLInputElement>}
                       value={String(field.value ?? '')}
                       onBlur={field.onBlur}
-                      onChange={field.onChange}
+                      onChange={(e) => field.onChange(e)}
                     />
                   )}
                 />
                 <FormField<ApplicationCoreValues>
                   name="requested_end_at"
-                  label="許可結束（ISO 日期時間）"
+                  label="許可結束日期"
                   children={(field) => (
                     <Input
+                      type="datetime-local"
                       name={field.name}
                       ref={field.ref as React.Ref<HTMLInputElement>}
                       value={String(field.value ?? '')}
                       onBlur={field.onBlur}
-                      onChange={field.onChange}
+                      onChange={(e) => field.onChange(e)}
                     />
                   )}
                 />

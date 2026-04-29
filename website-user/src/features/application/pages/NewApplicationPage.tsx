@@ -138,8 +138,8 @@ export function NewApplicationPage() {
             />
             <FormField<Values>
               name="requested_start_at"
-              label="許可期間起"
-              description="本地日期時間（儲存為 UTC ISO-8601）。"
+              label="許可起始日期"
+
               children={(field) => (
                 <Input
                   type="datetime-local"
@@ -153,7 +153,7 @@ export function NewApplicationPage() {
             />
             <FormField<Values>
               name="requested_end_at"
-              label="許可期間迄"
+              label="許可結束日期"
               children={(field) => (
                 <Input
                   type="datetime-local"
